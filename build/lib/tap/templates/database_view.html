@@ -1,0 +1,80 @@
+<%inherit file="base.html" />
+
+<%block name="meta_head">
+<script src="/static/ace-editor/ace.js"></script>
+</%block>
+
+<%block name="pagecontent">
+<div class="row">
+    <div class="col-xs-10">
+        <div class="well well-sm" style=" margin: 0px; border: 1px solid #c5d0dc;border-bottom:0px;">
+            <h5 style=" margin-bottom: 0; ">
+                SQL代码
+            </h5>
+        </div>
+
+        <div id="editor" style="height:150px;border: 1px solid #c5d0dc;border-top:0px;"></div>
+    </div>
+
+    <div class="col-xs-2">
+        <button style="width:100%" type="button" class="btn btn-white btn-success" id="btn-run-sql" data-target="#myModal" data-toggle="modal">
+            <i class="ace-icon fa fa-play-circle bigger-130"></i>
+            运行
+        </button>
+    </div>
+    <div class="col-xs-12" style="margin-top:20px">
+        <div class="tabbable">
+            <ul class="nav nav-tabs" id="myTab3">
+                <li class="active">
+                    <a data-toggle="tab" href="#home3">
+                        <i class="blue ace-icon fa fa-table bigger-110"></i>
+                        <small class="blue">数据</small>
+                    </a>
+                </li>
+
+                <li>
+                    <a data-toggle="tab" href="#profile3" onclick="javascript: setTimeout('infoTable.fnDraw()', 500);">
+                        <i class="pink ace-icon fa fa-info-circle bigger-110"></i>
+                        <small class="pink">信息</small>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div id="home3" class="tab-pane in active" style="min-height:300px;">
+                </div>
+
+                <div id="profile3" class="tab-pane" style="min-height:300px">
+                    <table id="table-info" class="table table-bordered">
+                        <thead>
+                        <tr>
+                            %for col in tablelist[0]:
+                            <th>${col}</th>
+                            %endfor
+                        </tr>
+                        </thead>
+                        <tbody>
+                        %for row in tablelist[1:]:
+                        <tr>
+                            %for val in row:
+                            <td>${val}</td>
+                            %endfor
+                        </tr>
+                        %endfor
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+</%block>
+
+
+<%block name="jsblock">
+<script>
+    <%include file="database_view.js"/>
+</script>
+</%block>
+

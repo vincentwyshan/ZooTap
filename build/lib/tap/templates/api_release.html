@@ -1,0 +1,225 @@
+<%inherit file="api.html" />
+
+<%block name="meta_head">
+<style type="text/css">
+    form select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    }
+</style>
+</%block>
+
+<%block name="apicontent">
+<div class="row">
+    <div class="col-xs-12">
+        <div class="tab-content" style="padding: 0px 12px;">
+            <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                <h5 style=" margin-bottom: 0; ">测试</h5>
+            </div>
+
+            <div class="row" style="margin-top:15px;margin-bottom:15px;">
+
+                <form id="form-api-test">
+                    <input type="hidden" name="id" value="${api.id}">
+                    %for para in api.paras:
+                    <div class="col-xs-4">
+                        <div class="input-group">
+                        <span class="input-group-addon">
+                                @${para.name} =
+                        </span>
+                            <input name="${para.name}" value="${para.default}" class="form-control input-mask-phone" type="text" id="form-field-mask-2"
+                                   placeholder="">
+                        </div>
+                    </div>
+                    %endfor
+                </form>
+
+            </div>
+
+            <div class="row" style="margin-top:15px;margin-bottom:15px; text-align:right">
+                <div class="col-xs-12">
+                    <button id="btn-api-test" type="button" class="btn btn-white btn-primary" data-target="#myModal" data-toggle="modal">
+                        <i class="ace-icon fa fa-play-circle bigger-130"></i>
+                        运行测试
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <h5 class="header smaller lighter blue">发布选项</h5>
+    </div>
+    <div class="col-xs-12">
+        <form id="form-release" class="form-horizontal" role="form">
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label">
+                    授权类型
+                </label>
+
+                <div class="col-sm-10">
+                    <select name="auth_type" class="chosen-select col-xs-5">
+                        <option ${
+                        'selected' if api.auth_type=='OPEN' else ''}>OPEN</option>
+                        <option ${
+                        'selected' if api.auth_type=='AUTH' else ''}>AUTH</option>
+                    </select>
+                    <span style="margin:4px;" data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                          data-placement="right"
+                          data-content="OPEN: 公开访问<br>AUTH: 使用AuthToken获得AccessKey访问API<br><i class='red fa fa-warning'></i>&nbsp;授权类型会应用到所有已发布版本!"
+                          title="" data-original-title="授权类型        ">?</span>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="form-group" style="margin-top:15px">
+                <label class="col-xs-2 control-label"> 版本号 </label>
+
+                <div class="col-xs-5">
+                    <input name="version" value="${current_version}" type="hidden" class="col-xs-10">
+                    <input style="padding-left:12px" value="v${current_version}" type="text" disabled class="col-xs-10">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top:15px">
+                <label class="col-xs-2 control-label"> 数据库 </label>
+
+                <div class="col-xs-5">
+                    <input type="text" disabled class="col-xs-10" value="${api.dbconn and ','.join([dbconn.name for dbconn in api.get_dbconn()])}" />
+                </div>
+            </div>
+
+            <!-- #section:elements.form -->
+            <div class="form-group" style="margin-top:15px">
+                <label class="col-xs-2 control-label"> 发布说明 </label>
+
+                <div class="col-xs-10">
+                    <input name="notes" value="" type="text" id="form-field-1" placeholder="" class="col-xs-10">
+                </div>
+            </div>
+
+            <input type="hidden" name="api_id" value="${api.id}">
+            <input type="hidden" name="action" value="releasesave">
+
+            <div class="form-group" style="margin-top:15px">
+                <div class="col-xs-12" style="text-align:right; padding-right:24px;">
+                    <button id="btn-save-release" class="btn btn-sm btn-primary no-border"><i class="ace-icon fa fa-upload bigger-130"></i>发布</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12">
+        <h5 class="header smaller lighter blue">所有版本</h5>
+    </div>
+    <div class="col-xs-12">
+        <table class="table table-hover table-striped" style="border-top:0; margin-bottom:5px;">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>版本号</th>
+                <th>数据库</th>
+                <th>发布者</th>
+                <th>API地址</th>
+                <th>发布说明</th>
+                <th>时间</th>
+            </tr>
+            </thead>
+            <tbody>
+            %for release in releases:
+            <tr>
+                <td>${loop.index + 1}</td>
+                <td><a href="">v${release.version}</a></td>
+                <td>${','.join(release_db[release.id].keys())}</td>
+                <td>${release.user_release.name}</td>
+                <td><b class="green">/api/${release.project_name}/${release.api_name}/v${release.version}</b></td>
+                %if len(release.notes) > 13:
+                <td data-toggle="tooltip" title="${release.notes.replace(u'"', ur'\"')}">${release.notes[:10] + u'...'}</td>
+                %else:
+                <td>${release.notes}</td>
+                %endif
+                <td>${release.created}</td>
+            </tr>
+            %endfor
+            </tbody>
+        </table>
+        <ul class="pagination pull-right" style="margin:0;">
+            %if paginator.prevlist:
+            <li>
+                <a href="?page=${paginator.prevlist[-1]}">
+                    <i class="ace-icon fa fa-angle-double-left"></i>
+                </a>
+            </li>
+            %else:
+            <li class="disabled">
+                <a href="#">
+                    <i class="ace-icon fa fa-angle-double-left"></i>
+                </a>
+            </li>
+            %endif
+
+            %for p in paginator.prevlist:
+            <li>
+                <a href="?page=${p}">${p}</a>
+            </li>
+            %endfor
+
+            <li class="active">
+                <a href="#">${paginator.current}</a>
+            </li>
+
+            %for p in paginator.nextlist:
+            <li>
+                <a href="?page=${p}">${p}</a>
+            </li>
+            %endfor
+
+            %if paginator.nextlist:
+            <li>
+                <a href="?page=${paginator.nextlist[0]}">
+                    <i class="ace-icon fa fa-angle-double-right"></i>
+                </a>
+            </li>
+            %else:
+            <li class="disabled">
+                <a href="#">
+                    <i class="ace-icon fa fa-angle-double-right"></i>
+                </a>
+            </li>
+            %endif
+        </ul>
+    </div>
+</div>
+</%block>
+
+<%block name="jsblock">
+<script>
+    <%include file="api_release.js"/>
+
+</script>
+</%block>
+
+<%block name="modal">
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">运行测试 - ${api.cnname}</h4>
+            </div>
+            <div class="modal-body">
+            </div>
+        </div>
+    </div>
+</div>
+</%block>
+

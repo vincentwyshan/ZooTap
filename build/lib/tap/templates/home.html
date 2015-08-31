@@ -1,0 +1,24 @@
+<%inherit file="base.html" />
+
+
+<%block name="pagecontent">
+
+%for project in projects:
+<div class="widget-box transparent">
+    <div class="widget-header widget-header-large">
+        <h3 class="widget-title grey lighter">
+            <i class="ace-icon fa fa-codepen green"></i>
+            <a href="/management/project/${project.id}" class="grey">${project.name}</a>
+        </h3>
+    </div>
+
+    <div class="widget-body">
+        <div class="widget-main padding-24 row">
+            <iframe style="border:0;height:270px" src="/management/charts?category=PROJECT&type=TIME&project-id=${project.id}" class="col-xs-12"></iframe>
+            <iframe style="border:0;height:270px" src="/management/charts?category=PROJECT&type=VISIT&project-id=${project.id}" class="col-xs-12"></iframe>
+        </div>
+    </div>
+</div>
+%endfor
+
+</%block>

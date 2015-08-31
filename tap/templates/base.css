@@ -1,0 +1,26 @@
+.cada-sort:after{
+  float: right;
+  display: inline;
+  content: "\f0dc";
+  font-family: FontAwesome;
+  font-size: 13px;
+  font-weight: 400;
+  color: #555;
+}
+.cada-sort-asc:after{
+  content: "\f0de";
+  top: 4px;
+  color: #307ecc;
+}
+.cada-sort-desc:after{
+  content: "\f0dd";
+  top: -6px;
+  color: #307ecc;
+}
+.cada-sort{
+  cursor: pointer;
+}
+.cada-sort a{
+  text-decoration:none;
+  color: #707070;
+}

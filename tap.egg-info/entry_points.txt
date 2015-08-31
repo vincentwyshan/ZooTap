@@ -1,0 +1,8 @@
+      [paste.app_factory]
+      main = tap:main
+      [console_scripts]
+      tap_initdb = tap.scripts.initializedb:main
+      tap_stats = tap.service.rpcstats:main
+      tap_dump = tap.scripts.dbtools:tap_dump
+      tap_import = tap.scripts.dbtools:tap_import
+      

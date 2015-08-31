@@ -1,0 +1,353 @@
+<%inherit file="base.html" />
+
+<%block name="pagecontent">
+
+<div class="widget-box transparent">
+    <div class="widget-header widget-header-large">
+        <h3 class="widget-title grey lighter">
+            <i class="ace-icon fa fa-user green"></i>
+            ${user.name}
+        </h3>
+    </div>
+
+    <input type="hidden" id="user-id" value="${user.id}"/>
+
+    <div class="widget-body">
+        <div class="widget-main padding-24">
+            <div class="row">
+                <div class="col-xs-4" style="padding:0">
+                    <table class="table" style="margin:0;border-top:0">
+                        <tbody>
+                        <tr>
+                            <td style="padding:0;border-top:0;">
+                                <div class="checkbox" style="">
+                                    <label style="padding-left:0px">
+                                        %if user.is_admin:
+                                        <input name="is_admin" type="checkbox" class="ace" checked>
+                                        %else:
+                                        <input name="is_admin" type="checkbox" class="ace">
+                                        %endif
+                                        <span class="lbl" style="color:#707070;font-size:13px; font-weight:bold">  是否管理员</span>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0;border-top:0;padding-bottom:5px">
+                                <a data-toggle="modal" href="#write" data-target="#myModal" class="btn btn-xs no-border">修改密码</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:0;border-top:0;padding-bottom:5px">
+                                <a id="btn-save" href="#" class="btn btn-xs no-border btn-primary" disabled>保存修改</a>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td style="padding:0;">
+                                <input id="filter" type="text" value="" placeholder="过滤权限名" class="input-sm" style="width:100%;border:0"/>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <table id="table-header" class="table table-hover table-striped" style="margin:0">
+                    <thead>
+                    <tr>
+                        <th style="width:50px; text-align:center">#</th>
+                        <th style="text-align:left;width:150px;">权限名</th>
+                        <th style="text-align:left"></th>
+                        <th style="width:80px; text-align:center">查看</th>
+                        <th style="width:80px; text-align:center">编辑</th>
+                        <th style="width:80px; text-align:center">添加</th>
+                        <th style="width:80px; text-align:center">删除</th>
+                    </tr>
+                    </thead>
+                </table>
+
+                <div style="height:373px;overflow-y:auto">
+                    <table id="table-data" class="table table-hover table-striped">
+                        <tbody>
+                        %for permission in permissions:
+                        <tr>
+                            <td style="width:50px;text-align:center;">${loop.index+1}</td>
+                            <td style="text-align:left;width:150px;">${permission.name}</td>
+                            <td style="text-align:left;">${permission.description}</td>
+                            <td style="width:80px;text-align:center">
+                                <div class="checkbox" style="margin:0">
+                                    <label style="padding-left:0px">
+                                        %if permission.id in user_permissions and user_permissions[permission.id].a_view==True:
+                                        <input name="${permission.id}-view" type="checkbox" class="ace" checked>
+                                        %else:
+                                        <input name="${permission.id}-view" type="checkbox" class="ace">
+                                        %endif
+                                        <span class="lbl"></span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="width:80px;text-align:center">
+                                <div class="checkbox" style="margin:0">
+                                    <label style="padding-left:0px">
+                                        %if permission.id in user_permissions and user_permissions[permission.id].a_edit==True:
+                                        <input name="${permission.id}-edit" type="checkbox" class="ace" checked>
+                                        %else:
+                                        <input name="${permission.id}-edit" type="checkbox" class="ace">
+                                        %endif
+                                        <span class="lbl"></span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="width:80px;text-align:center">
+                                <div class="checkbox" style="margin:0">
+                                    <label style="padding-left:0px">
+                                        %if permission.id in user_permissions and user_permissions[permission.id].a_add==True:
+                                        <input name="${permission.id}-add" type="checkbox" class="ace" checked>
+                                        %else:
+                                        <input name="${permission.id}-add" type="checkbox" class="ace">
+                                        %endif
+                                        <span class="lbl"></span>
+                                    </label>
+                                </div>
+                            </td>
+                            <td style="width:80px;text-align:center">
+                                <div class="checkbox" style="margin:0">
+                                    <label style="padding-left:0px">
+                                        %if permission.id in user_permissions and user_permissions[permission.id].a_delete==True:
+                                        <input name="${permission.id}-delete" type="checkbox" class="ace" checked>
+                                        %else:
+                                        <input name="${permission.id}-delete" type="checkbox" class="ace">
+                                        %endif
+                                        <span class="lbl"></span>
+                                    </label>
+                                </div>
+                            </td>
+                        </tr>
+                        %endfor
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</%block>
+
+
+<%block name="jsblock">
+<style>
+    #table-data tr:first-child td{border-top:0}
+</style>
+<script>
+
+if (typeof String.prototype.startsWith != 'function') {
+  // see below for better implementation!
+  String.prototype.startsWith = function (str){
+    return this.indexOf(str) === 0;
+  };
+}
+
+if (typeof String.prototype.endsWith != 'function') {
+  String.prototype.endsWith = function (str){
+    return this.slice(-str.length) == str;
+  };
+}
+
+var CHANGED = new Map();
+var checkChange = function(){
+    var name = $(this)[0].name;
+    var value = $(this)[0].checked;
+    if(name in CHANGED){
+        // 取消选择
+        delete CHANGED[name];
+    }
+    else{
+        CHANGED[name] = value;
+    }
+
+    // 检查子级权限
+    var tr = $(this).parent().parent().parent().parent();
+    var permissionName = tr.find('td:nth-child(2)').text();
+    if($(this).next().attr('noclick') == '1'){
+        $(this).removeAttr('noclick');
+    }
+    else{
+        setTimeout(function(){checkChildren(permissionName, name, value)}, 100);
+    }
+
+    for(var i in CHANGED){
+        // 如果能进入遍历，说明CHANGED不为空
+        $('#btn-save').removeAttr('disabled');
+        return;
+    }
+    $('#btn-save').attr('disabled', '');
+}
+var checkChildren = function(permissionName, inputName, value){
+    // 检查子级权限
+    inputName = inputName.split('-');
+    type = inputName[1];
+    $('#table-data tr').each(function(){
+        if($(this).is(':visible') == false){
+            // 不可见选项
+            return
+        }
+        var thisName = $(this).children('td:nth-child(2)').text();
+        if(thisName.startsWith(permissionName+'.')){
+            $(this).find('input').each(function(){
+                if(this.name.endsWith(type)){
+                    // 标记，避免迭代传递事件
+                    $(this).next().attr('noclick', '1');
+                    // 点击
+                    $(this).next().trigger('click');
+                }
+            });
+        }
+    });
+}
+
+var savePermission = function(){
+    var permissions = [];
+    $('#table-data tr').each(function(){
+        // permissionid-view:1,add:0,delete,0,edit,0;
+        if($(this).find('input:checked').size() == 0)
+            return ;
+        var id = $(this).find('input:checked')[0].name.split('-')[0];
+        var values = [];
+        $(this).find('input:checked').each(function(){
+            values.push(this.name.split('-')[1] + ':' + (this.checked==true? '1': '0'));
+        });
+        values = values.join(',');
+        permissions.push(id+'-' + values);
+    })
+    permissions = permissions.join(';')
+    var user_id = $('#user-id').val();
+    var params = {user_id:user_id, permissions: permissions, action:'permissionsave'}
+    var callback = function(response){
+        if(response.success==1){
+            CHANGED = new Map();
+            $('#btn-save').attr('disabled', '');
+            alert("保存成功");
+        }
+        else{
+            alert("保存失败: " + response.message);
+        }
+    }
+    $.post('/management/action', params, callback, 'json');
+    return false;
+}
+
+var saveAdmin = function(){
+    var admin = this.checked;
+    if(confirm("确认保存？") == false){
+        this.checked = !admin;
+        return
+    }
+    var user_id = $('#user-id').val();
+    var params = {user_id:user_id, is_admin: (admin==true?1:0), action:'adminsave'};
+    var callback = function(response){
+        if(response.success==1){
+            alert("保存成功");
+        }
+        else{
+            this.checked = !admin;
+            alert("保存失败: " + response.message);
+        }
+    }.bind(this);
+    $.post('/management/action', params, callback, 'json');
+}
+
+var savePassword = function(){
+    var params = $('#post-form').serialize();
+    var callback = function(response){
+        if(response.success == 1){
+            alert("保存成功");
+            $('#myModal').modal('hide');
+        }
+        else{
+            alert("保存失败:" + response.message);
+        }
+    }
+    $.post('/management/action', params, callback, 'json');
+}
+
+$(document).ready(function(){
+    $('#filter').keyup(function(){
+        var value = $(this).val().trim();
+        value = value.toLowerCase();
+        $('#table-data tr').each(function(){
+            var text1 = $(this).children('td:nth-child(2)').text();
+            text1 = text1.toLowerCase();
+            if(text1.indexOf(value) > -1){
+                $(this).show();
+                return;
+            }
+            else{
+                $(this).hide();
+            }
+            var text2 = $(this).children('td:nth-child(3)').text();
+            text2 = text2.toLowerCase();
+            if(text2.indexOf(value) > -1){
+                $(this).show();
+            }
+            else{
+                $(this).hide();
+            }
+        })
+    });
+    $('#table-data input').change(checkChange);
+    $('#btn-save').click(savePermission);
+    $('[name=is_admin]').change(saveAdmin);
+    $('#save-password').click(savePassword);
+});
+
+
+</script>
+
+</%block>
+
+<%block name="modal">
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">修改密码 - ${user.name}</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="post-form" role="form" onsubmit="return false;">
+                    <!-- #section:elements.form -->
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+                            新密码
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="text" id="form-field-1" name="password-new" placeholder="" class="col-xs-10 input-sm">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+                            重输新密码
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="text" id="form-field-1" name="password-new-repeat" placeholder="" class="col-xs-10 input-sm">
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="action" value="passwordchange"/>
+                    <input type="hidden" name="user_id" value="${user.id}"/>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="save-password" type="button" class="btn btn-primary btn-sm no-border">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+</%block>
+

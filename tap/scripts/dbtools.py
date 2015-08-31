@@ -1,0 +1,119 @@
+#coding=utf8
+"""
+数据导入导出工具
+    格式: pickle
+    大小: 全部大小不要超过内存大小
+"""
+__author__ = 'Vincent'
+
+import sys
+import cPickle
+from optparse import OptionParser
+
+import transaction
+from sqlalchemy import engine_from_config
+
+from pyramid.paster import (
+    get_appsettings,
+    setup_logging,
+    )
+
+
+from tap.models import (
+    DBSession,
+    Base
+)
+
+import tap.models as m
+# 根据模型依赖顺序排列, 多对多关联在模型内部做
+DATAMODELS = [m.TapUser, m.TapPermission, m.TapUserPermission, m.TapDBConn,
+              m.TapProject, m.TapApi, m.api_db, m.api_dbsecondary,
+              m.TapParameter, m.TapSource, m.TapApiConfig, m.TapApiRelease,
+              m.TapApiClient, m.TapApiAuth, m.TapApiAccessKey, m.TapApiStats,
+              m.TapApiErrors]
+
+
+def get_model(table_name):
+    for md in DATAMODELS:
+        if hasattr(md, '__table__'):
+            md = md.__table__
+        if md.name == table_name:
+            return md
+    return None
+
+
+def initdb():
+    config_uri = sys.argv[1]
+    # options = parse_vars(argv[2:])
+    setup_logging(config_uri)
+    settings = get_appsettings(config_uri)
+    engine = engine_from_config(settings, 'sqlalchemy.')
+    DBSession.configure(bind=engine)
+    Base.metadata.create_all(engine)
+
+
+def tap_dump():
+    usage = "usage: %prog production.ini [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-p', type="string", dest="path",
+                      default="/tmp/tapdump.pkl",
+                      help="dump file path, default: /tmp/tapdump.pkl")
+    (options, args) = parser.parse_args()
+    initdb()
+
+    data = []
+    with transaction.manager:
+        for md in DATAMODELS:
+            table_data = []
+            data.append(table_data)
+            if hasattr(md, '__table__'):
+                md = md.__table__
+            columns = md.columns.keys()
+            table_data.append(md.name)
+            table_data.append(columns)
+            for row in DBSession.query(md):
+                instance = {}
+                for c in columns:
+                    instance[c] = getattr(row, c)
+                table_data.append(instance)
+    f = open(options.path, 'wb')
+    cPickle.dump(data, f)
+    f.close()
+    print 'Dump done:', options.path
+
+
+def tap_import():
+    usage = "usage: %prog production.ini [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-p', type="string", dest="path",
+                      default="/tmp/tapdump.pkl",
+                      help="import file path, default: /tmp/tapdump.pkl")
+    (options, args) = parser.parse_args()
+    initdb()
+
+    path = options.path
+    f = open(path, 'rb')
+    data = cPickle.load(f)
+    for table_data in data:
+        md = get_model(table_data[0])
+        columns = table_data[1]
+        for row in table_data[2:]:
+            # 唯一性检查
+            if 'id' in columns:
+                exists = DBSession.query(md).filter_by(id=row['id']).first()
+                if exists:
+                    continue
+            else:
+                exists = DBSession.query(md)
+                for c in columns:
+                    exists = eval("exists.filter_by(%s=row[c])" % c)
+                exists = exists.first()
+                if exists:
+                    continue
+            # 开始导入
+            if hasattr(md, '__table__'):
+                md = md.__table__
+
+            insert = md.insert().values(row)
+            DBSession.bind.execute(insert)
+    print 'Import done:', options.path

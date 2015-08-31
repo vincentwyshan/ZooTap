@@ -1,0 +1,327 @@
+<%inherit file="base.html" />
+
+<%block name="pagecontent">
+
+<div class="widget-box transparent">
+    <div class="widget-header widget-header-large">
+        <h3 class="widget-title grey lighter">
+            <i class="ace-icon fa fa-codepen green"></i>
+            ${project.name}
+        </h3>
+    </div>
+
+    <div class="widget-body">
+        <div class="widget-main padding-24">
+            <div class="row">
+                <div class="col-xs-10">
+                    <div class="alert alert-block alert-info" style="min-height:100px;max-height:150px">
+                        <p>
+                            <strong><a href="/management/user/${project.user_create.id}">
+                                <i class="ace-icon fa fa-user blue"></i> ${project.user_create.name}
+                            </a></strong>
+                            <small>创建于 ${project.created.strftime('%Y-%m-%d %H:%M')}</small>
+                        </p>
+                        <p>${project.description or u'没有项目说明!'}</p>
+                    </div>
+                </div>
+                <div class="col-xs-2" style="text-align:right">
+                    <button class="btn btn-white btn-info btn-bold btn-sm btn-block">
+                        <i class="ace-icon fa fa-pencil bigger-120 blue"></i>
+                        编辑
+                    </button>
+
+                    <button class="btn btn-white btn-danger btn-bold btn-sm btn-block">
+                        <i class="ace-icon fa fa-trash-o bigger-120 "></i>
+                        删除
+                    </button>
+
+                    <form action="" method="GET">
+                        <input value="${q}" type="text" name="q" class="form-control input-sm" placeholder="搜索: API/名称" aria-describedby="sizing-addon3" style="margin-top:5px">
+                    </form>
+                </div>
+            </div>
+
+            <div class="row" style="margin-top:20px;">
+                <div class="widget-box transparent">
+                    <div class="widget-header widget-header-large">
+                        <h5 class="widget-title grey lighter">
+                            API列表
+                            <a data-toggle="modal" href="#write" data-target="#myModal" class="btn-new-mail pull-right">
+                                <span class="btn btn-primary no-border btn-sm">
+                                    <i class="ace-icon fa fa-plus bigger-130"></i>
+                                    <span class="bigger-110">添加</span>
+                                </span>
+                            </a>
+                        </h5>
+                    </div>
+                    <div class="widget-body">
+                        <table class="table table-hover table-striped" style="border-top:0;margin-bottom:5px;">
+                            <thead>
+                            <tr>
+                                <th>#</th>
+
+                                %if sort_field=='api-name' and sort_direction == 'asc':
+                                <th class="cada-sort cada-sort-asc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">API</a>
+                                </th>
+                                %elif sort_field=='api-name' and sort_direction == 'desc':
+                                <th class="cada-sort cada-sort-desc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">API</a>
+                                </th>
+                                %else:
+                                <th class="cada-sort">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-name'})}">API</a>
+                                </th>
+                                %endif
+
+                                %if sort_field=='api-cnname' and sort_direction == 'asc':
+                                <th class="cada-sort cada-sort-asc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">名称</a>
+                                </th>
+                                %elif sort_field=='api-cnname' and sort_direction == 'desc':
+                                <th class="cada-sort cada-sort-desc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">名称</a>
+                                </th>
+                                %else:
+                                <th class="cada-sort">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-cnname'})}">名称</a>
+                                </th>
+                                %endif
+
+                                <th>
+                                    创建者
+                                </th>
+
+
+                                %if sort_field=='api-created' and sort_direction == 'asc':
+                                <th class="cada-sort cada-sort-asc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">创建时间</a>
+                                </th>
+                                %elif sort_field=='api-created' and sort_direction == 'desc':
+                                <th class="cada-sort cada-sort-desc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">创建时间</a>
+                                </th>
+                                %else:
+                                <th class="cada-sort">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-created'})}">创建时间</a>
+                                </th>
+                                %endif
+
+                                %if sort_field=='api-timestamp' and sort_direction == 'asc':
+                                <th class="cada-sort cada-sort-asc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">修改时间</a>
+                                </th>
+                                %elif sort_field=='api-timestamp' and sort_direction == 'desc':
+                                <th class="cada-sort cada-sort-desc">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">修改时间</a>
+                                </th>
+                                %else:
+                                <th class="cada-sort">
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-timestamp'})}">修改时间</a>
+                                </th>
+                                %endif
+
+                                <th width="50px">状态</th>
+                                <th width="200px">统计</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            %for api in apis:
+                            <tr>
+                                <td>
+
+                                    ${(paginator.current-1) * paginator.num_per_page + loop.index + 1}
+                                </td>
+                                <td><a href="/management/api/${api.id}">${api.name}</a></td>
+
+                                %if len(api.cnname) > 15:
+                                <td data-toggle="tooltip" title="${api.cnname}">${api.cnname[:14] + u'...'}</td>
+                                %else:
+                                <td>${api.cnname}</td>
+                                %endif
+
+                                <td>${api.user_create.name}</td>
+                                <td>${api.created.strftime('%Y-%m-%d %H:%M')}</td>
+                                <td>${api.timestamp.strftime('%Y-%m-%d %H:%M')}</td>
+                                <td>
+                                    %if api.status == 'EDIT':
+                                    <i class="blue fa fa-pencil" data-toggle="tooltip" title="开发状态: 正在开发"></i>
+                                    %elif api.status == 'RELEASE':
+                                    <i class="blue fa fa-upload" data-toggle="tooltip" title="开发状态: 已发布"></i>
+                                    %endif
+
+                                    %if api.auth_type == 'OPEN':
+                                    <i class="grey fa fa-users" data-toggle="tooltip" title="授权类型: OPEN"></i>
+                                    %else:
+                                    <i class="grey fa fa-user-secret" data-toggle="tooltip" title="授权类型: AUTH"></i>
+                                    %endif
+                                </td>
+                                <td><span class="spark" data-times="${spark_time[api.id]}" data-values="${spark_data[api.id]}"></span></td>
+                            </tr>
+                            %endfor
+                            </tbody>
+                        </table>
+                        <ul class="pagination pull-right" style="margin:0;">
+                            %if paginator.prevlist:
+                            <li>
+                                <a href="?${paginator.param(paginator.prevlist[-1])}">
+                                    <i class="ace-icon fa fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            %else:
+                            <li class="disabled">
+                                <a href="#">
+                                    <i class="ace-icon fa fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            %endif
+
+                            %for p in paginator.prevlist:
+                            <li>
+                                <a href="?${paginator.param(p)}">${p}</a>
+                            </li>
+                            %endfor
+
+                            <li class="active">
+                                <a href="#">${paginator.current}</a>
+                            </li>
+
+                            %for p in paginator.nextlist:
+                            <li>
+                                <a href="?${paginator.param(p)}">${p}</a>
+                            </li>
+                            %endfor
+
+                            %if paginator.nextlist:
+                            <li>
+                                <a href="?${paginator.param(paginator.nextlist[0])}">
+                                    <i class="ace-icon fa fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                            %else:
+                            <li class="disabled">
+                                <a href="#">
+                                    <i class="ace-icon fa fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                            %endif
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+</%block>
+
+
+<%block name="modal">
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">创建项目</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="post-form" role="form">
+                    <!-- #section:elements.form -->
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+                            API名
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="text" id="form-field-1" name="name" placeholder="" class="col-xs-10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+                            名称
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="text" id="form-field-1" name="cnname" placeholder="" class="col-xs-10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+                            说明
+                        </label>
+
+                        <div class="col-sm-9">
+                            <textarea type="text" id="form-field-1" name="description" placeholder="说明" class="col-xs-10"></textarea>
+                        </div>
+                    </div>
+                    <input type="hidden" id="submit-action" name="action" value="apisave"/>
+                    <input type="hidden" name="project_id" value="${project.id}"/>
+
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="save-api" type="button" class="btn btn-primary btn-sm no-border">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+</%block>
+
+
+<%block name="jsblock">
+<script>
+function saveApi(){
+	$('#save-api').attr('disable', true);
+	var paras = $('#post-form').serialize();
+	$.getJSON('/management/action', paras, function(response){
+		if(response.success == 1){
+			window.location.reload();
+        }
+		else {
+			alert(response.message);
+            $('#save-api').removeAttr('disable');
+		}
+	})
+}
+function headerClick(){
+    var href = $(this).children('a').attr('href');
+    if(href != null && href != undefined)
+        window.location.href = href;
+    return false;
+}
+var myspark = null;
+var myoptions = null;
+function tooltipSpark(sparklines, options, point){
+    var index = point[0].offset;
+    var times = options.tag.getAttribute('data-times').split(',');
+    return '  <span style="display:inline;color: '+point[0].color+'">●</span> '+times[index]+', '+ point[0].value;
+}
+
+$(document).ready(function(){
+	$('#save-api').click(saveApi);
+
+	$('.spark').sparkline('html', {
+        tagValuesAttribute: 'data-values',//the attribute which has data
+        type: 'bar',
+        barColor: '#939aa4',
+        highlightColor: '#4593de',
+        chartRangeMin: 0,
+        tooltipFormatter: tooltipSpark,
+        }
+    );
+
+    $('table thead th').click(headerClick);
+})
+
+
+
+</script>
+</%block>

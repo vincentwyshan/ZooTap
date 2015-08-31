@@ -1,0 +1,81 @@
+<%inherit file="api.html" />
+
+<%block name="apicontent">
+
+<form id="parameters">
+    <div class="row" style="margin-bottom:10px">
+        <div class="col-xs-6">
+            <input type="hidden" name="api_id" value="${api.id}"/>
+            <select id="version" name="version" class="chosen-select col-xs-10">
+                %for release in releases:
+                %if release == selected:
+                <option selected value="${release.version}">v${release.version} (发布于: ${release.created.strftime('%Y-%m-%d %H:%M')})</option>
+                %else:
+                <option value="${release.version}">v${release.version} (发布于: ${release.created.strftime('%Y-%m-%d %H:%M')})</option>
+                %endif
+                %endfor
+            </select>
+
+        </div>
+
+    </div>
+
+    <hr/>
+
+    <input type="hidden" name="action" value="cacheget"/>
+    %for i in range(int(math.ceil(len(api_selected.paras)/2.0))):
+    <div class="row" style="margin-bottom:10px">
+        <% para=api_selected.paras[i*2] %>
+        <div class="col-xs-2">
+            <div class="input-group">
+                <span class="input-group-addon">@</span>
+                <input value="${para.name}" class="form-control input-sm" disabled type="text"/>
+            </div>
+        </div>
+        <div class="col-xs-3">
+            <input name="${para.name}" value="${para.default}" type="text" class="col-xs-12 input-sm">
+        </div>
+        <div class="col-xs-2"></div>
+        %if (i*2+1) < len(api_selected.paras):
+        <% para=api_selected.paras[i*2+1] %>
+        <div class="col-xs-2">
+            <div class="input-group">
+                <span class="input-group-addon">@</span>
+                <input value="${para.name}" class="form-control input-sm" disabled type="text"/>
+            </div>
+        </div>
+        <div class="col-xs-3">
+            <input name="${para.name}" value="${para.default}" type="text" class="col-xs-12 input-sm">
+        </div>
+        %endif
+    </div>
+    %endfor
+</form>
+
+<hr/>
+
+<div class="row">
+    <div class="col-xs-6"></div>
+    <div class="col-xs-6" style="margin-bottom:20px">
+        <a id="delete-cache" class="btn btn-primary btn-sm pull-right no-border" disabled style="margin-left:10px">删除缓存</a>
+        <a id="gen-cache" class="btn btn-primary btn-sm pull-right no-border">生成缓存</a>
+    </div>
+    <div class="col-xs-12">
+        <div id="jsonview" style="border:1px solid #eee;padding:10px">
+
+            没有数据！
+        </div>
+    </div>
+</div>
+
+</%block>
+
+<%block name="jsblock">
+<script>
+    <%include file="api_cachemanage.js"/>
+
+
+
+</script>
+</%block>
+

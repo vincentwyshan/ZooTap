@@ -1,0 +1,344 @@
+<%inherit file="api.html" />
+
+<%block name="meta_head">
+<script src="/static/ace-editor/ace.js"></script>
+<style type="text/css">
+    form select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    }
+    .source-type {
+    cursor: pointer;
+    }
+</style>
+</%block>
+
+<%block name="apicontent">
+
+<form id="form-api" class="form-horizontal" role="form">
+
+    <div class="row" style="height:46px">
+        <div class="col-xs-12">
+            <button id="btn-save-api" class="btn btn-sm btn-primary no-border" style="margin:1px"><i class="ace-icon fa fa-save bigger-130"></i>保存</button>
+
+            <button id="btn-new-para" apiid="${api.id}" type="button" class="btn btn-white btn-primary">
+                <i class="ace-icon fa fa-plus bigger-130"></i>
+                增加参数
+            </button>
+
+            <button type="button" class="btn btn-white btn-primary" id="btn-api-test" data-target="#myModal" data-toggle="modal">
+                <i class="ace-icon fa fa-play-circle bigger-130"></i>
+                运行测试
+            </button>
+
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="tab-content" style="padding: 0px 12px;">
+                <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                    <h5 style=" margin-bottom: 0; ">基本信息</h5>
+                </div>
+
+                <!-- #section:elements.form -->
+                <div class="form-group" style="margin-top:15px">
+                    <label class="col-xs-2 control-label"> API名 </label>
+
+                    <div class="col-xs-10">
+                        <input name="name" value="${api.name}" type="text" placeholder="" class="col-xs-10">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-xs-2 control-label"> 名称 </label>
+
+                    <div class="col-xs-10">
+                        <input name="cnname" value="${api.cnname}" type="text" placeholder="" class="col-xs-10">
+                    </div>
+                </div>
+
+                <hr/>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="bottom"
+                              data-content="<span>SQL 开发模式下默认使用第一个数据库</span>"
+                              title="" data-original-title="说明">?</span>
+                        数据库
+                    </label>
+
+                    <div class="col-sm-10">
+                        <input type="hidden" name="dbconn" value="${','.join([str(v) for v in dbconn])}"/>
+                        <select id="dbconn" data-placeholder="选择数据库..." multiple class="chosen-select col-xs-10">
+                            <option value="">选择数据库</option>
+                            %for conn_id in dbconn:
+                            <option selected value="${conns[conn_id].id}">${conns[conn_id].name}</option>
+                            %endfor
+                            %for conn in conns.values():
+                            %if conn.id not in dbconn:
+                            <option value="${conn.id}">${conn.name}</option>
+                            %endif
+                            %endfor
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="bottom"
+                              data-content="<ol><li>操作类型为<b>只读</b>才能使用负载均衡</li><li>负载均衡是对数据库复制机制的支持, 可有效利用从数据库</li></ol>"
+                              title="" data-original-title="说明">?</span>
+                        负载均衡
+                    </label>
+
+                    <div class="col-sm-10">
+                        <input type="hidden" name="dbconn_secondary" value="${','.join([str(v) for v in dbconn_secondary])}"/>
+                        <select id="dbconn_secondary" data-placeholder="选择从数据库..." multiple class="chosen-select col-xs-10">
+                            <option value="">选择数据库</option>
+                            %for conn_id in dbconn_secondary:
+                            <option selected value="${conns[conn_id].id}">${conns[conn_id].name}</option>
+                            %endfor
+                            %for conn in conns.values():
+                            %if conn.id not in dbconn_secondary:
+                            <option value="${conn.id}">${conn.name}</option>
+                            %endif
+                            %endfor
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-xs-2 control-label"> 负载均衡配置 </label>
+
+                    <div class="col-xs-10">
+                        <input name="dbconn_ratio" value="${api.dbconn_ratio or ''}" type="text"
+                               placeholder="PRIMARYDB=PRIMARYDB:20,SECONDARYDB1:40,SECONDARYDB2:40;" class="col-xs-10">
+                    </div>
+                </div>
+
+                <hr/>
+
+                <div class="form-group">
+                    <label class="col-xs-2 control-label"> 缓存时间 </label>
+
+                    <div class="col-xs-10">
+                        <input name="cache_time" value="${api.cache_time}" type="text" placeholder="" class="col-xs-5">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">
+                        缓存持久化
+                    </label>
+
+                    <div class="col-sm-10">
+                        <select name="cache_persistencedb_id" placeholder="" class="chosen-select col-xs-5">
+                            <option value="">选择数据库</option>
+                            %for conn in conns.values():
+                            %if conn.id == api.cache_persistencedb_id:
+                            <option selected value="${conn.id}">${conn.name}</option>
+                            %elif conn.dbtype == 'MONGODB':
+                            <option value="${conn.id}">${conn.name}</option>
+                            %else:
+                            %endif
+                            %endfor
+                        </select>
+                    </div>
+                </div>
+
+                <hr/>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">
+                        操作类型
+                    </label>
+
+                    <div class="col-sm-10">
+                        <select name="writable" placeholder="" class="chosen-select col-xs-10">
+                            <option ${
+                            'selected' if api.writable == False else ''} value="0">只读</option>
+                            <option ${
+                            'selected' if api.writable == True else ''} value="1">读写</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-xs-2 control-label"> 说明 </label>
+
+                    <div class="col-xs-10">
+                        <textarea name="description" type="text" id="form-field-description" placeholder="" class="col-xs-10"
+                                  style='font-family: Consolas, "Liberation Mono", Courier, monospace;' rows="10">${api.description}</textarea>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:20px">
+        <div class="col-xs-12">
+            <div class="tab-content" style="padding: 0px 12px;">
+                <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                    <h5 style=" margin-bottom: 0; ">
+                        参数列表
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="right"
+                              data-content="NULL: 空值<br>NOW: 当前时间"
+                              title="" data-original-title="常量或变量关键字">?</span>
+                    </h5>
+                </div>
+                %for para in api.paras:
+                <div class="form-group" style="margin-top:15px">
+                    <div class="col-xs-2">
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                @
+                            </span>
+                            <input name="para-name-${para.id}" value="${para.name}" class="form-control input-mask-phone" type="text" id="form-field-mask-2" placeholder="参数名">
+                        </div>
+                    </div>
+
+                    <div class="col-xs-3">
+                        <input name="para-default-${para.id}" value="${para.default}" type="text" placeholder="默认值" class="col-xs-12">
+                    </div>
+
+                    <div class="col-xs-3">
+                        <select data-toggle="tooltip" title="参数类型" name="para-val_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                            <option ${
+                            'selected' if para.val_type=='TEXT' else ''}>TEXT</option>
+                            <option ${
+                            'selected' if para.val_type=='INT' else ''}>INT</option>
+                            <option ${
+                            'selected' if para.val_type=='DECIMAL' else ''}>DECIMAL</option>
+                            <option ${
+                            'selected' if para.val_type=='DATE' else ''}>DATE</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xs-3">
+                        <select data-toggle="tooltip" title="是否可选参数" name="para-absent_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                            <option ${
+                            'selected' if para.absent_type =='NECESSARY' else ''} value="NECESSARY">必须</option>
+                            <option ${
+                            'selected' if para.absent_type =='OPTIONAL' else ''} value="OPTIONAL">可选</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xs-1 hidden-sm hidden-xs action-buttons" style="padding-top: 8px">
+                        <a paraid="${para.id}" class="red delete-para" href="#"> <i class="ace-icon fa fa-trash-o bigger-130"></i> </a>
+                    </div>
+
+                </div>
+                %endfor
+
+                <div id="sample-para" style="display:none">
+                    <div class="form-group" style="margin-top:15px">
+                        <div class="col-xs-2">
+                            <div class="input-group">
+                            <span class="input-group-addon">
+                                @
+                            </span>
+                                <input name="para-name-{{para.id}}" value="{{para.name}}" class="form-control input-mask-phone" type="text" id="form-field-mask-2"
+                                       placeholder="参数名">
+                            </div>
+                        </div>
+
+                        <div class="col-xs-3">
+                            <input name="para-default-{{para.id}}" value="{{para.default}}" type="text" placeholder="默认值" class="col-xs-12">
+                        </div>
+
+                        <div class="col-xs-3">
+                            <select name="para-val_type-{{para.id}}" placeholder="" class="col-xs-12 form-control">
+                                <option>TEXT</option>
+                                <option>INT</option>
+                                <option>DECIMAL</option>
+                                <option>DATE</option>
+                            </select>
+                        </div>
+
+                        <div class="col-xs-3">
+                            <select data-toggle="tooltip" title="是否可选参数" name="para-absent_type-{{para.id}}" placeholder="" class="col-xs-12 form-control">
+                                <option value="NECESSARY">必须</option>
+                                <option value="OPTIONAL">可选</option>
+                            </select>
+                        </div>
+
+
+                        <div class="col-xs-1 hidden-sm hidden-xs action-buttons" style="padding-top: 8px">
+                            <a paraid="{{para.id}}" class="red delete-para" href="#"> <i class="ace-icon fa fa-trash-o bigger-130"></i> </a>
+                        </div>
+
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-top:20px">
+        <input type="hidden" name="source" value="">
+        <input type="hidden" name="action" value="apisave">
+        <input type="hidden" name="id" value="${api.id}">
+
+        <div class="col-xs-12">
+            <div class="tab-content" style="padding: 0px 12px;">
+                <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                    <h5 style=" margin-bottom: 0; ">
+                        代码
+                        <span class="source-type label label-lg
+                        %if api.source.source_type == 'PYTHON':
+                        label-success
+                        %else:
+                        label-default
+                        %endif
+                        arrowed-in pull-right" style="margin-top:-4px;">Python</span>
+                        <span class="source-type label label-lg
+                        %if api.source.source_type == 'SQL':
+                        label-success
+                        %else:
+                        label-default
+                        %endif
+                        arrowed-right pull-right" style="margin-top: -4px;">SQL</span>
+
+                        <input type="hidden" name="source_type" value="${api.source.source_type}">
+                    </h5>
+                </div>
+
+                <div id="editor" style="height:400px;margin: 0px -12px 0px -12px;border-left:0px;border-right:0px;">${api.source.source}</div>
+            </div>
+        </div>
+    </div>
+
+</form>
+</%block>
+
+<%block name="jsblock">
+<script>
+    <%include file="api_config.js"/>
+
+
+</script>
+</%block>
+
+<%block name="modal">
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">运行测试 - ${api.cnname}</h4>
+            </div>
+            <div class="modal-body">
+            </div>
+        </div>
+    </div>
+</div>
+</%block>
+

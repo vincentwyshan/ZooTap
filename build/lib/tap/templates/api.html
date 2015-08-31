@@ -1,0 +1,51 @@
+<%inherit file="base.html" />
+
+<%block name="pagecontent">
+<div class="row" style="height:45px;">
+    <div class="col-xs-12">
+        <div class="tabbable">
+            <ul class="nav nav-tabs" id="myTab">
+                <li class="${'active' if active_config else ''}">
+                    <a data-toggle="tab" href="#" myhref="/management/api/${api.id}" onclick="javascript:window.location.href=$(this).attr('myhref')">
+                        <i class="green ace-icon fa fa-pencil bigger-120"></i>
+                        配置
+                    </a>
+                </li>
+
+                <li class="${'active' if active_release else ''}">
+                    <a data-toggle="tab" href="#" myhref="/management/api/${api.id}/release" onclick="javascript:window.location.href=$(this).attr('myhref')">
+                        <i class="green ace-icon fa fa-upload bigger-120"></i>
+                        发布
+                    </a>
+                </li>
+                <li class="${'active' if active_auth else ''}">
+                    <a data-toggle="tab" href="#" myhref="/management/api/${api.id}/auth" onclick="javascript:window.location.href=$(this).attr('myhref')">
+                        <i class="green ace-icon fa fa-navicon bigger-120"></i>
+                        授权
+                    </a>
+                </li>
+
+                <li class="${'active' if active_stats else ''}">
+                    <a data-toggle="tab" href="#" myhref="/management/api/${api.id}/stats" onclick="javascript:window.location.href=$(this).attr('myhref')">
+                        <i class="green ace-icon fa fa-bar-chart-o bigger-120"></i>
+                        统计
+                    </a>
+                </li>
+
+                <li class="">
+                    <a data-toggle="tab" href="#" myhref="/management/api/${api.id}/promanage" onclick="javascript:window.location.href=$(this).attr('myhref')">
+                        <i class="green ace-icon fa fa-bar-chart-o bigger-120"></i>
+                        在线管理
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+    </div>
+</div>
+
+<%block name="apicontent">
+</%block>
+
+</%block>

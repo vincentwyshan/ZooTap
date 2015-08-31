@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta charset="utf-8"/>
+    <title>${pagename} - Cada Tap</title>
+
+    <meta name="description" content="Capitalvue Cada Tap Interface Management"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+
+    <!-- bootstrap & fontawesome -->
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css"/>
+
+    <link rel="stylesheet" href="/static/css/chosen.css"/>
+
+    <!-- page specific plugin styles -->
+
+    <!-- text fonts -->
+    <link rel="stylesheet" href="/static/css/ace-fonts.css"/>
+
+    <!-- ace styles -->
+    <link rel="stylesheet" href="/static/css/ace.min.css" id="main-ace-style"/>
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-part2.min.css"/>
+    <![endif]-->
+    <link rel="stylesheet" href="/static/css/ace-skins.min.css"/>
+    <link rel="stylesheet" href="/static/css/ace-rtl.min.css"/>
+
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-ie.min.css"/>
+    <![endif]-->
+
+    <link rel="stylesheet" href="/static/jjsonviewer/jjsonviewer.css"/>
+
+    <!-- ace settings handler -->
+    <script src="/static/js/ace-extra.min.js"></script>
+
+    <!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+
+    <!--[if lte IE 8]>
+    <script src="/static/js/html5shiv.min.js"></script>
+    <script src="/static/js/respond.min.js"></script>
+    <![endif]-->
+
+    <%block name="meta_head" />
+
+    <style type="text/css">
+       <%include file="base.css"/>
+    </style>
+</head>
+
+<body class="no-skin">
+<!-- #section:basics/navbar.layout -->
+<div id="navbar" class="navbar navbar-default">
+    <script type="text/javascript">
+				try{ace.settings.check('navbar' , 'fixed')}catch(e){}
+
+
+    </script>
+
+    <div class="navbar-container container" id="navbar-container">
+        <!-- #section:basics/sidebar.mobile.toggle -->
+        <button type="button" class="navbar-toggle menu-toggler pull-left" id="menu-toggler">
+            <span class="sr-only">Toggle sidebar</span>
+
+            <span class="icon-bar"></span>
+
+            <span class="icon-bar"></span>
+
+            <span class="icon-bar"></span>
+        </button>
+
+        <!-- /section:basics/sidebar.mobile.toggle -->
+        <div class="navbar-header pull-left">
+            <!-- #section:basics/navbar.layout.brand -->
+            <a href="#" class="navbar-brand">
+                <small>
+                    <i class="fa fa-cloud"></i>
+                    Cada Tap
+                </small>
+            </a>
+
+            <!-- /section:basics/navbar.layout.brand -->
+
+            <!-- #section:basics/navbar.toggle -->
+
+            <!-- /section:basics/navbar.toggle -->
+        </div>
+
+        <!-- #section:basics/navbar.dropdown -->
+        <div class="navbar-buttons navbar-header pull-right" role="navigation">
+            <ul class="nav ace-nav">
+
+
+                <!-- #section:basics/navbar.user_menu -->
+                <li class="light-blue">
+                    <a data-toggle="dropdown" href="#" class="dropdown-toggle">
+                        <span> ${request.user.name} </span>
+                        <i class="ace-icon fa fa-caret-down"></i>
+                    </a>
+
+                    <ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
+                        <li>
+                            <a href="/management/profile?${request.user.id}">
+                                <i class="ace-icon fa fa-user"></i>
+                                信息
+                            </a>
+                        </li>
+
+                        <li>
+                            <a href="/management/logout">
+                                <i class="ace-icon fa fa-power-off"></i>
+                                登出
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- /section:basics/navbar.user_menu -->
+            </ul>
+        </div>
+
+        <!-- /section:basics/navbar.dropdown -->
+    </div>
+    <!-- /.navbar-container -->
+</div>
+
+<!-- /section:basics/navbar.layout -->
+<div class="main-container container" id="main-container">
+    <script type="text/javascript">
+				try{ace.settings.check('main-container' , 'fixed')}catch(e){}
+
+
+    </script>
+
+    <!-- #section:basics/sidebar -->
+    <div id="sidebar" class="sidebar                  responsive">
+        <script type="text/javascript">
+					//try{ace.settings.check('sidebar' , 'fixed')}catch(e){}
+					try{ace.settings.sidebar_fixed(true, true);}catch(e){console.info(e)}
+        </script>
+
+
+        <ul class="nav nav-list">
+             <li class="${'active' if active_home else ''} hover">
+                <a href="/" class="dropdown-toggle" onclick="javascript: window.location.href='/';">
+                    <i class="menu-icon fa fa-home"></i>
+                    <span class="menu-text">首页</span>
+
+                </a>
+            </li>
+
+            <li class="${'active' if active_database else ''} hover">
+                <a href="/management/database">
+                    <i class="menu-icon fa fa-database"></i>
+                    <span class="menu-text"> 数据库 </span>
+                </a>
+
+            </li>
+
+            <li class="${'active' if active_project else ''} hover">
+                <a href="/management/project" class="dropdown-toggle" onclick="javascript: window.location.href='/management/project';">
+                    <i class="menu-icon fa fa-desktop"></i>
+                    <span class="menu-text"> 项目 </span>
+
+                    <b class="arrow fa fa-angle-right"></b>
+                </a>
+
+
+                %if project_names:
+                <ul class="submenu">
+                    %for project in project_names:
+                    <li class="hover ${'active' if (current_project_id==project['id']) else ''}">
+                        <a href="/management/project/${project['id']}">
+                            <i class="menu-icon fa fa-codepen"></i>
+                            ${project['name']}
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    %endfor
+                </ul>
+                %endif
+            </li>
+
+            <li class="hover ${'active' if active_client else ''}">
+                <a href="/management/client" class="dropdown-toggle" onclick="javascript: window.location.href='/management/client';">
+                    <i class="menu-icon fa fa-ticket"></i>
+                    <span class="menu-text"> 客户端 </span>
+
+                </a>
+            </li>
+
+            <li class="hover ${'active' if active_users else ''}">
+                <a href="/management/permission" class="dropdown-toggle" onclick="javascript: window.location.href='/management/permission';">
+                    <i class="menu-icon fa fa-list"></i>
+                    <span class="menu-text"> 管理 </span>
+
+                </a>
+            </li>
+
+
+
+            <li class="hover">
+                <a href="#" class="dropdown-toggle">
+                    <i class="menu-icon fa fa-pencil-square-o"></i>
+                    <span class="menu-text"> 文档 </span>
+
+                </a>
+            </li>
+
+        </ul>
+        <!-- /.nav-list -->
+
+        <!-- #section:basics/sidebar.layout.minimize -->
+        <div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+            <i class="ace-icon fa fa-angle-double-left" data-icon1="ace-icon fa fa-angle-double-left"
+               data-icon2="ace-icon fa fa-angle-double-right"></i>
+        </div>
+
+        <!-- /section:basics/sidebar.layout.minimize -->
+        <script type="text/javascript">
+					try{ace.settings.check('sidebar' , 'collapsed')}catch(e){}
+
+
+        </script>
+    </div>
+
+    <!-- /section:basics/sidebar -->
+    <div class="main-content">
+        <!-- #section:basics/content.breadcrumbs -->
+        <%block name="breadcrumbs">
+        <div class="breadcrumbs" id="breadcrumbs">
+            <script type="text/javascript">
+						try{ace.settings.check('breadcrumbs' , 'fixed')}catch(e){}
+
+
+            </script>
+
+            <ul class="breadcrumb">
+                %for bc in top_breadcrumbs:
+                %if top_breadcrumbs.index(bc) == 0:
+                <li>
+                    <i class="ace-icon fa fa-home home-icon"></i>
+                    %if 'url' in bc:
+                    <a href="${bc['url']}">${bc['text']}</a>
+                    %else:
+                    ${bc['text']}
+                    %endif
+                </li>
+                %else:
+                %if 'url' in bc:
+                <li class="${bc['class']}"><a href="${bc['url']}">${bc['text']}</a></li>
+                %else:
+                <li class="${bc['class']}">${bc['text']}</li>
+                %endif
+                %endif
+                %endfor
+            </ul>
+            <!-- /.breadcrumb -->
+
+        </div>
+    </%block>
+
+    <!-- /section:basics/content.breadcrumbs -->
+    <div class="page-content">
+        <%block name="pagecontent">
+    </%block>
+</div>
+<!-- /.page-content -->
+</div>
+<!-- /.main-content -->
+
+<div class="footer">
+    <div class="footer-inner">
+        <!-- #section:basics/footer -->
+        <div class="footer-content">
+						<span class="bigger-120">
+							<span class="blue bolder"><a target="_blank" href="http://www.capitalvue.com">Capitalvue</a></span>
+							Application &copy; 2009-2015
+						</span>
+        </div>
+
+        <!-- /section:basics/footer -->
+    </div>
+</div>
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
+</a>
+</div><!-- /.main-container -->
+
+<!-- basic scripts -->
+
+<!--[if !IE]> -->
+<script type="text/javascript">
+			window.jQuery || document.write("<script src='/static/js/jquery.min.js'>"+"<"+"/script>");
+
+
+</script>
+
+<!-- <![endif]-->
+
+<!--[if IE]>
+<script type="text/javascript">
+ window.jQuery || document.write("<script src='/static/js/jquery1x.min.js'>"+"<"+"/script>");
+
+
+</script>
+<![endif]-->
+<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='/static/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+
+
+</script>
+<script src="/static/js/bootstrap.min.js"></script>
+
+<!-- page specific plugin scripts -->
+
+<!--[if lte IE 8]>
+<script src="/static/js/excanvas.min.js"></script>
+<![endif]-->
+<script src="/static/js/jquery-ui.custom.min.js"></script>
+<script src="/static/js/jquery.ui.touch-punch.min.js"></script>
+<script src="/static/js/jquery.easypiechart.min.js"></script>
+<script src="/static/js/jquery.sparkline.min.js"></script>
+
+<!-- ace scripts -->
+<script src="/static/js/ace-elements.min.js"></script>
+<script src="/static/js/ace.min.js"></script>
+
+<!-- the following scripts are used in demo only for onpage help and you don't need them -->
+<link rel="stylesheet" href="/static/css/ace.onpage-help.css"/>
+
+<script type="text/javascript"> ace.vars['base'] = '..'; </script>
+<script src="/static/js/ace/elements.onpage-help.js"></script>
+<script src="/static/js/ace/ace.onpage-help.js"></script>
+<script src="/static/js/chosen.jquery.min.js"></script>
+<script src="/static/js/typeahead.jquery.min.js"></script>
+
+<script src="/static/js/jquery.dataTables.min.js"></script>
+<script src="/static/js/jquery.dataTables.bootstrap.js"></script>
+
+<script src="/static/jjsonviewer/jjsonviewer.js"></script>
+
+<script>
+$(document).ready(function(){
+	$('.chosen-select').chosen({allow_single_deselect:true});
+	$('[data-toggle="popover"]').popover({html:true, container:'body'});
+	$('[data-toggle="tooltip"]').tooltip({container:'body'});
+	$(window) .off('resize.chosen')
+				.on('resize.chosen', function() {
+					$('.chosen-select').each(function() {
+						 var $this = $(this);
+						 var _class = $(this).attr('class');
+						 var reg = /\scol[^\s]+\d+/;
+						 if(reg.exec(_class) != null){
+                            $this.next().addClass(reg.exec(_class)[0]);
+                         }
+						 //$this.next().css({'width': $this.parent().width()});
+						 $this.next().removeAttr('style');
+						 $this.next().css({'padding-left': 0});
+						 $this.next().css({'padding-right': 0});
+					})
+				}).trigger('resize.chosen');
+    $('.chosen-choices .search-field input').css('width', '100px');
+ })
+
+</script>
+<%block name="jsblock">
+</%block>
+<%block name="modal">
+</%block>
+</body>
+</html>
