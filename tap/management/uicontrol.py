@@ -76,7 +76,7 @@ def gen_breadcrumbs(request):
             )
     elif re.match(ur"/management/user/", request.path):
         result.append(
-            {"url": '/management/user/list', "text": "用户列表"}
+            {"url": '/management/user/list', "text": u"用户列表"}
         )
         if 'user_id' in request.matchdict:
             with transaction.manager:

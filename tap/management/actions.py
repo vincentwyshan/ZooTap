@@ -39,12 +39,14 @@ def perm_check_fail(msg=None):
     if not msg:
         msg = u"你无权访问此接口"
     result = json.dumps(dict(status=403, message=msg))
-    return Response(result, content_type=403)
+    return Response(result, content_type='application/json')
 
 
 def perm_check(func):
     def wraper(*kargs, **kwarg):
         self = kargs[0]
+        if self.request.user.is_admin:
+            return func(*kargs, **kwarg)
         params = self.request.params
         a = AuthControl(self.request)
         action = params['action']
@@ -108,8 +110,8 @@ class Action(object):
     def __init__(self, request):
         self.request = request
 
-    @view_config(route_name='action', permission="edit")
     @perm_check
+    @view_config(route_name='action', permission="edit")
     def route(self):
         result = dict(success=0, message=u"没有任何操作可执行!")
         action = self.request.params.get('action')

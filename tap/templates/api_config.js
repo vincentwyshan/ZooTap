@@ -128,8 +128,11 @@ var editor = null;
 $(document).ready(function(){
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/xcode");
+    // 显示 tap
+    editor.setDisplayIndentGuides(true);
     var sourceType = $.trim($('.label-success').text());
     editor.getSession().setMode("ace/mode/"+sourceType.toLowerCase());
+    editor.getSession().setUseSoftTabs(true);
 
     // save
     $('#btn-save-api').click(saveApi);
