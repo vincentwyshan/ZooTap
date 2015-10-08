@@ -42,8 +42,8 @@ class AuthControl(object):
             need_permission = self.pages_permission(self.request.path)
 
         elif self.request.path.startswith('/management/action'):
-            return [(Deny, Everyone, 'view'), (Deny, Everyone, 'edit'),
-                    (Deny, Everyone, 'delete'), (Deny, Everyone, 'add')]
+            return [(Allow, Everyone, 'view'), (Allow, Everyone, 'edit'),
+                    (Allow, Everyone, 'delete'), (Allow, Everyone, 'add')]
         elif self.request.path == '/':
             need_permission = 'SYS_INDEX:view'
         else:
@@ -84,9 +84,10 @@ class AuthControl(object):
         # Permission:
         result = None
         matchdict = self.request.matchdict
+        params = self.request.params
         if path == '/management/database':
             result = 'SYS_DATABASE:view'
-        elif path == '/management/client':
+        elif path.startswith('/management/client'):
             result = 'SYS_CLIENT:view'
         elif path == '/management/user':
             result = 'SYS_USER:view'
@@ -98,6 +99,8 @@ class AuthControl(object):
             result = '%s:view' % self.project_name(matchdict['project_id'])
         elif path.startswith('/management/api/'):
             result = '%s:view' % self.api_name(matchdict['api_id'])
+        elif path.startswith('/management/api-test'):
+            result = '%s:view' % self.api_name(params['id'])
         return result
 
     @property

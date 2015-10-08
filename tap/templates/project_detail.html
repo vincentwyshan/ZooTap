@@ -21,16 +21,16 @@
                             </a></strong>
                             <small>创建于 ${project.created.strftime('%Y-%m-%d %H:%M')}</small>
                         </p>
-                        <p>${project.description or u'没有项目说明!'}</p>
+                        <p>${project.description.replace(u'\n', u'<br/>') or u'没有项目说明!'}</p>
                     </div>
                 </div>
                 <div class="col-xs-2" style="text-align:right">
-                    <button class="btn btn-white btn-info btn-bold btn-sm btn-block">
+                    <button class="btn btn-white btn-info btn-bold btn-sm btn-block" data-toggle="modal" href="#write" data-target="#editModal">
                         <i class="ace-icon fa fa-pencil bigger-120 blue"></i>
                         编辑
                     </button>
 
-                    <button class="btn btn-white btn-danger btn-bold btn-sm btn-block">
+                    <button disabled class="btn btn-white btn-danger btn-bold btn-sm btn-block">
                         <i class="ace-icon fa fa-trash-o bigger-120 "></i>
                         删除
                     </button>
@@ -273,6 +273,56 @@
         </div>
     </div>
 </div>
+
+
+<!-- Modal project edit -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="editModalLabel">编辑项目</h4>
+      </div>
+      <div class="modal-body">
+        <form class="form-horizontal" id="post-form-project" role="form">
+			<!-- #section:elements.form -->
+            <input type="hidden" name="id" value="${project.id}"/>
+			<div class="form-group">
+				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+					项目标识
+				</label>
+				<div class="col-sm-9">
+					<input type="text" id="form-field-1" name="name" value="${project.name}" placeholder="名称" class="col-xs-10">
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+					名称
+				</label>
+				<div class="col-sm-9">
+					<input type="text" id="form-field-1" name="cnname" value="${project.cnname}" placeholder="连接字符串" class="col-xs-10">
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
+					说明
+				</label>
+				<div class="col-sm-9">
+					<textarea type="text" id="form-field-1" name="description" placeholder="说明" class="col-xs-10">${project.description}</textarea>
+				</div>
+			</div>
+			<input type="hidden" id="submit-action" name="action" value="projectsave"/>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button id="save-project" type="button" class="btn btn-primary no-border">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
 </%block>
 
 
@@ -305,6 +355,20 @@ function tooltipSpark(sparklines, options, point){
     return '  <span style="display:inline;color: '+point[0].color+'">●</span> '+times[index]+', '+ point[0].value;
 }
 
+function saveProject(){
+	$('#save-project').attr('disable', true);
+	var paras = $('#post-form-project').serialize();
+	$.getJSON('/management/action', paras, function(response){
+		if(response.success == 1){
+			window.location.reload();
+        }
+		else {
+			alert(response.message);
+            $('#save-project').removeAttr('disable');
+		}
+	})
+}
+
 $(document).ready(function(){
 	$('#save-api').click(saveApi);
 
@@ -319,6 +383,7 @@ $(document).ready(function(){
     );
 
     $('table thead th').click(headerClick);
+	$('#save-project').click(saveProject);
 })
 
 

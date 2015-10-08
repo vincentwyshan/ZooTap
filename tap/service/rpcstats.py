@@ -41,9 +41,8 @@ STATS_ELAPSE_CLIENT = {}
 STATS_EXC_CLIENT = {}
 # (API-ID, CLIENT-ID, exc_trace): {}
 
-class Handler(object):
-    cache = {}
 
+class Handler(object):
     def ping(self):
         print 'ping'
 
@@ -58,7 +57,7 @@ class Handler(object):
         :param params-exc_trace: optional
         :param params-exc_context: optional, json
         """
-        # 访问量和耗时统计
+        # 访问量和耗时统计(按 api_id)
         api_id = params['api_id']
         if api_id not in STATS_ELAPSE:
             STATS_ELAPSE[api_id] = dict(
@@ -79,14 +78,14 @@ class Handler(object):
 
         elapse['elapse_avg'] = elapse['elapse_sum'] / elapse['occurrence_total']
 
-        # 按客户ID统计访问量和耗时统计
+        # 访问量和耗时统计(按 client_id)
         client_id = params.get('client_id', None)
         if client_id:
             key = (api_id, client_id)
             if key not in STATS_ELAPSE:
                 STATS_ELAPSE_CLIENT[key] = dict(
                     elapse_max=0, elapse_min=0, elapse_avg=0,
-                    occurrence_total=0, elapse_sum=0
+                    occurrence_total=0, elapse_sum=0, exception_total=0
                 )
             elapse = STATS_ELAPSE_CLIENT[key]
             elapse['elapse_sum'] += elapse_now
@@ -102,6 +101,7 @@ class Handler(object):
             elapse_avg = elapse['elapse_sum'] / elapse['occurrence_total']
             elapse['elapse_avg'] = elapse_avg
 
+        print 'ELAPSE:', len(STATS_ELAPSE), len(STATS_ELAPSE_CLIENT)
         if 'exc_type' not in params:
             return
 
@@ -123,7 +123,7 @@ class Handler(object):
         STATS_EXC[key]['occurrence_total'] += 1
         STATS_EXC[key]['occurrence_last'] = datetime.datetime.now()
 
-        # 出错统计 - 按客户
+        # 出错统计(按客户)
         if client_id:
             key = (api_id, client_id, exc_trace)
             if key not in STATS_EXC:
@@ -139,9 +139,7 @@ class Handler(object):
             STATS_EXC[key]['occurrence_last'] = datetime.datetime.now()
 
 
-
 def flush_log(occurrence_time):
-
     global STATS_ELAPSE, STATS_ELAPSE_CLIENT, STATS_EXC, STATS_EXC_CLIENT
     # 更新访问量和耗时统计
     # print 'client:', len(STATS_ELAPSE_CLIENT)
@@ -152,7 +150,9 @@ def flush_log(occurrence_time):
     all_stats.extend([(api_id, -1, elapse) for api_id, elapse in
                       STATS_ELAPSE.items()])
     STATS_ELAPSE = {}
-    # print 'Stats elapse:', len(all_stats)
+    print occurrence_time, 'ELAPSE:', len(STATS_ELAPSE), \
+        len(STATS_ELAPSE_CLIENT)
+    print occurrence_time, 'Stats elapse:', len(all_stats)
     for api_id, client_id, elapse in all_stats:
         with transaction.manager:
             api = DBSession.query(TapApi).get(api_id)
@@ -262,7 +262,7 @@ def interval_vals(ivalue):
         ]
 
     oneday = []
-    for i in range(1, 25):
+    for i in range(24):
         for j in range(len(_actpoint)):
             point = _actpoint[j]
             oneday.append(
@@ -273,6 +273,18 @@ def interval_vals(ivalue):
 
 
 def interval_flush(ivalue):
+    while 1:
+        try:
+            _interval_flush(ivalue)
+        except:
+            import traceback
+            traceback.print_exc()
+            from raven import Client
+            sentry = Client('http://80bb9d1abcf94d048ca29aa8b9a236d1:0a0bb7d150424a81ba3ca04935e9a7ff@sentry.iqnode.cn/6')
+            sentry.captureException()
+
+
+def _interval_flush(ivalue):
     oneday = interval_vals(ivalue)
 
     _oneday = copy.deepcopy(oneday)
@@ -292,6 +304,7 @@ def interval_flush(ivalue):
         finally:
             time.sleep(1)
 
+        # 根据 interval value 确定 sleep 时间
         try:
             now = datetime.datetime.now()
             now_datetime = (now.hour, now.minute, now.second)
@@ -321,7 +334,7 @@ def interval_flush(ivalue):
             from raven import Client
             sentry = Client('http://80bb9d1abcf94d048ca29aa8b9a236d1:0a0bb7d150424a81ba3ca04935e9a7ff@sentry.iqnode.cn/6')
             sentry.captureException()
-        # print 'Today:', len(_oneday), ivalue, interval
+        print 'Today:', now, len(_oneday), ivalue, interval
         time.sleep(interval)
 
 
@@ -349,17 +362,19 @@ def client_ensure(func):
 
 PORT = 10101
 
+
 class Client(object):
     def __init__(self, host):
         self.host = host
         self.client = None
         self.transport = None
-        self.init_client()
+        self._newclient()
 
+    @client_ensure
     def ping(self):
         self.client.ping()
 
-    def init_client(self):
+    def _newclient(self):
         transport = TSocket.TSocket(self.host, PORT)
         transport.setTimeout(1000*60*2)
         self.transport = TTransport.TBufferedTransport(transport)
@@ -371,8 +386,6 @@ class Client(object):
         self.client = TapService.Client(protocol)
 
         self.transport.open()
-
-        # self.client.ping()
 
     @client_ensure
     def report(self, params):
@@ -400,6 +413,8 @@ def run_server():
 
 
 clients = {}
+
+
 def get_client(host='127.0.0.1', force_new=False):
     now = time.time()
     if host not in clients or clients[host][1] > now or force_new:

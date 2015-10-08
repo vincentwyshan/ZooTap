@@ -50,6 +50,7 @@ def add_route(config):
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/', factory='tap.security.AuthControl')
     config.add_route('login', '/management/login')
+    config.add_route('logout', '/management/logout')
     config.add_route('database', '/management/database',
                      factory='tap.security.AuthControl')
     config.add_route('database_view', '/management/database/{dbconn_id}',

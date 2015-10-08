@@ -56,7 +56,8 @@ def cache_get(config, version, paras):
     program = Program(config, version)
     paras = program._para_prepare(paras, config.paras)
     key = cache_key(config, version, paras)
-    data = tap_cache.get(key)
+    data = tap_cache.get(key, expiration_time=config.cache_time,
+                         ignore_expiration=False)
     if isinstance(data, NoValue):
         data = None
     return data
@@ -103,3 +104,27 @@ def cache_fn(config, version, func, *args, **kwargs):
             import traceback; traceback.print_exc()
     return result
 
+
+def cache_fn1(expire):
+    """
+    cache common function
+    :return:
+    """
+    def rcv_func(func):
+        def wraper(*kargs, **kwarg):
+            keys = list(kargs)
+            keys.extend([(k, v) for k, v in kwarg.items()])
+            keys.insert(0, func.__name__)
+            key = 'fn.' + str(hash(repr(keys))).replace('-', '_')
+
+            def creator():
+                return func(*kargs, **kwarg)
+
+            def dont_cache_none(value):
+                return value is not None
+
+            return tap_cache.get_or_create(key, creator,
+                                           expiration_time=expire,
+                                           should_cache_fn=dont_cache_none)
+        return wraper
+    return rcv_func

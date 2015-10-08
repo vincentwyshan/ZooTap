@@ -80,6 +80,12 @@ def login(request):
     return render_to_response('templates/login.html', locals(), request=request)
 
 
+@view_config(route_name="logout")
+def logout(request):
+    headers = forget(request)
+    return HTTPFound(location='/', headers=headers)
+
+
 def common_vars(request):
     top_breadcrumbs = gen_breadcrumbs(request)
     project_names = gen_project_names(request)
@@ -376,8 +382,9 @@ class Management(object):
             for release in releases:
                 if release.version == selected:
                     selected = release
-            if selected is None:
+            if selected is None and releases:
                 selected = releases[0]
+            # TODO handle no releases
             api_selected = dict2api(json.loads(selected.content))
 
             context = dict(pagename=u"%s - 线上管理" % api.name, api=api,
@@ -603,6 +610,7 @@ class ChartsGen(object):
         self.request = request
 
     def chart_time(self, category):
+        max_points = 360
         query = None
         if category == 'PROJECT':
             project_id = int(self.request.params['project-id'])
@@ -615,7 +623,7 @@ class ChartsGen(object):
                      TapApiStats.client_id==-1)\
                 .group_by(TapApiStats.occurrence_time)\
                 .order_by(TapApiStats.occurrence_time.desc())
-            query = query.limit(120)
+            query = query.limit(max_points)
         elif category == 'API':
             api_id = int(self.request.params['api-id'])
             query = DBSession.query(
@@ -626,7 +634,7 @@ class ChartsGen(object):
             ).filter(TapApiStats.api_id==api_id, TapApiStats.client_id==-1)\
                 .group_by(TapApiStats.occurrence_time)\
                 .order_by(TapApiStats.occurrence_time.desc())
-            query = query.limit(120)
+            query = query.limit(max_points)
         elif category == 'API-CLIENT':
             api_id = int(self.request.params['api-id'])
             client_id = int(self.request.params['client-id'])
@@ -653,12 +661,13 @@ class ChartsGen(object):
             avg_data.append((occurrence_time, stat.elapse_avg))
             max_data.append((occurrence_time, stat.elapse_max))
             min_data.append((occurrence_time, stat.elapse_min))
-        self.fix_timeseries(avg_data)
-        self.fix_timeseries(max_data)
-        self.fix_timeseries(min_data)
+        self.fix_timeseries(avg_data, max_points=max_points)
+        self.fix_timeseries(max_data, max_points=max_points)
+        self.fix_timeseries(min_data, max_points=max_points)
         return series
 
     def chart_visit(self, category):
+        max_points = 360
         query = None
         if category == 'PROJECT':
             project_id = int(self.request.params['project-id'])
@@ -669,7 +678,7 @@ class ChartsGen(object):
             ).filter_by(project_id=project_id, client_id=-1)\
                 .group_by(TapApiStats.occurrence_time)\
                 .order_by(TapApiStats.occurrence_time.desc())
-            query = query.limit(120)
+            query = query.limit(max_points)
         elif category == 'API':
             api_id = int(self.request.params['api-id'])
             query = DBSession.query(
@@ -679,7 +688,7 @@ class ChartsGen(object):
             ).filter_by(api_id=api_id, client_id=-1)\
                 .group_by(TapApiStats.occurrence_time)\
                 .order_by(TapApiStats.occurrence_time.desc())
-            query = query.limit(120)
+            query = query.limit(max_points)
         elif category == 'API-CLIENT':
             api_id = int(self.request.params['api-id'])
             client_id = int(self.request.params['client-id'])
@@ -690,7 +699,7 @@ class ChartsGen(object):
             ).filter_by(api_id=api_id, client_id=client_id)\
                 .group_by(TapApiStats.occurrence_time)\
                 .order_by(TapApiStats.occurrence_time.desc())
-            query = query.limit(120)
+            query = query.limit(max_points)
 
         visit_data = []
         visit = dict(name=u'访问量', data=visit_data, color='#7cb5ec')
@@ -702,8 +711,8 @@ class ChartsGen(object):
             occurrence_time = int(occurrence_time * 1000)
             visit_data.append((occurrence_time, stat.occurrence_total))
             error_data.append((occurrence_time, stat.exception_total))
-        self.fix_timeseries(visit_data)
-        self.fix_timeseries(error_data)
+        self.fix_timeseries(visit_data, max_points=max_points)
+        self.fix_timeseries(error_data, max_points=max_points)
         return [visit, error]
 
     @classmethod
@@ -743,6 +752,8 @@ class ChartsGen(object):
         using_points.sort(key=lambda x: x[0])
         del timeseries[:]
         timeseries.extend(using_points)
+        if len(timeseries) > max_points:
+            timeseries = timeseries[-max_points:]
 
     @view_config(route_name="charts")
     def charts(self):

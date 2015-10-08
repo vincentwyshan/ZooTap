@@ -67,7 +67,7 @@ def perm_check(func):
         elif 'paradelete' == action:
             perm = '%s.config:edit' % a.api_name(params['id'])
         elif 'releasesave' == action:
-            perm = '{api}.release:add' % a.api_name(params['id'])
+            perm = '%s.release:add' % a.api_name(params['api_id'])
         elif 'clientsave' == action:
             perm = 'SYS_CLIENT:edit'
         elif 'authclientadd' == action:
@@ -715,3 +715,4 @@ def para_setattr(para, name, request, type="TEXT"):
             setattr(para, name, val)
             return True
     return False
+

@@ -16,7 +16,7 @@
         <div class="widget-box transparent" style="margin-bottom:20px;">
             <div class="widget-header widget-header-large">
                 <h4 class="widget-title grey lighter">
-                    ${client.name}
+                    ${client.name} <small>授权API</small>
                 </h4>
             </div>
         </div>
@@ -30,7 +30,10 @@
                 <div class="col-xs-4" style="min-height:50px;padding-top:8px;padding-bottom:8px;">
                     <small><a href="/management/api/${api.id}">${api.name} (${api.cnname})</a></small>
                     %if api.description:
-                    <p style="font-size:13px;" class="grey"><i class="fa fa-pagelines"></i>&nbsp;&nbsp;${api.description}</p>
+                    <p style="font-size:13px;" class="grey" ${('title="%s"' % api.description.replace('"', r'\"')) if len(api.description) >= 100 else ''}><i
+                        class="fa fa-pagelines"></i>&nbsp;&nbsp;
+                        ${(api.description if len(api.description) < 100 else api.description[:98] + '...').strip().replace('\n', '<br>').replace('\t', '&nbsp;'*4)}
+                    </p>
                     %endif
                 </div>
                 %endfor

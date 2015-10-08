@@ -43,7 +43,7 @@ from tap.service.common import dict2api
 from tap.service.common import CadaEncoder
 from tap.service.common import cu
 from tap.service.common import dbconn_ratio_parse
-from tap.service.cache import cache_fn
+from tap.service.cache import cache_fn, cache_fn1
 from tap.service.auth import valid_key
 from tap.service.exceptions import *
 from tap.service.rpcstats import get_client
@@ -53,7 +53,6 @@ from tap.models import (
     TapApi,
     TapApiRelease,
 )
-
 
 
 @view_config(route_name='api_run')
@@ -67,8 +66,27 @@ def main(request):
     api_name = request.matchdict['api_name']
     version = request.matchdict.get('version')
 
-    # get config
-    release = None
+    version, config = load_config(project_name, api_name, version)
+    config = dict2api(config)
+
+    # run program
+    try:
+        result = Program(config, version).run(dict(request.params))
+    except ApiAuthFail:
+        result = dict(sys_status=403, sys_error="Auth Fail")
+    jresult = json.dumps(result, cls=CadaEncoder)
+    if 'jsonpCallback' in request.params:
+        jsonp = request.params['jsonpCallback']
+        jresult = jsonp + '(%s)' % jresult
+    response = Response(jresult,
+                        headerlist=[('Access-Control-Allow-origin', '*',)])
+    response.content_type = "application/json"
+    response.status = result['sys_status']
+    return response
+
+
+@cache_fn1(180)
+def load_config(project_name, api_name, version):
     if version:
         version = int(version)
         release = DBSession.query(TapApiRelease).filter_by(
@@ -91,22 +109,7 @@ def main(request):
     if not release:
         raise HTTPNotFound
     config = json.loads(release.content)
-    config = dict2api(config)
-
-    # run program
-    try:
-        result = Program(config, release.version).run(dict(request.params))
-    except ApiAuthFail:
-        result = dict(sys_status=403, sys_error="Auth Fail")
-    jresult = json.dumps(result, cls=CadaEncoder)
-    if 'jsonpCallback' in request.params:
-        jsonp = request.params['jsonpCallback']
-        jresult = jsonp + '(%s)' % jresult
-    response = Response(jresult,
-                        headerlist=[('Access-Control-Allow-origin', '*',)])
-    response.content_type = "application/json"
-    response.status = result['sys_status']
-    return response
+    return release.version, config
 
 
 def val_universal(val, dbtype):
@@ -402,7 +405,7 @@ class Program(object):
                 with measure() as time_cu:
                     rows = [[val_universal(v, dbtype) for v in row]
                             for row in cursor.fetchall()]
-                elapse.append(['CU', time_cu()])
+                elapse.append(['UNIVERSAL_CHR', time_cu()])
                 cols = [col[0] for col in cursor.description]
                 db_result.append(cols)
                 db_result.extend(rows)
@@ -467,8 +470,11 @@ class Program(object):
 
     def report_stats(self, stats):
         try:
+            # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
             if not self.rpc_client:
                 self.rpc_client = get_client()
+            if random.random() > 0.1:
+                self.rpc_client.ping()
             self.rpc_client.report(stats)
         except:
             import traceback
