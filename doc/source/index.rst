@@ -13,7 +13,7 @@ Contents:
 
    config.rst
    sqlextend.rst
-
+   CHANGES.rst
 
 
 Indices and tables
