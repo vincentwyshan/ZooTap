@@ -1,6 +1,11 @@
 
 function executeSQL(){
     var source = editor.getValue();
+    var selectedSource = editor.getSelectedText();
+    console.log(selectedSource);
+    if(selectedSource != null && selectedSource != ''){
+        source = selectedSource;
+    }
 
     $('#btn-run-sql').attr('disabled', true);
     $('#home3').empty();
@@ -41,10 +46,42 @@ function initTableInfo(){
     } );
 }
 
+function saveSource(){
+    // 定期保存代码
+    var source = editor.getValue();
+    try{
+        localStorage.setItem('ace-source-${dbconn.id}', source);
+    }
+    catch(e){
+        console.warn("未能自动保存代码");
+        console.warn(e);
+    }
+}
+
+function recoverSource(){
+    try{
+        var source = localStorage.getItem('ace-source-${dbconn.id}');
+        if(source){
+            $('#editor').text(source);
+        }
+    }
+    catch(e){
+        console.warn("未能自动恢复代码:");
+        console.warn(e);
+    }
+}
+
 $(document).ready(function(){
+    recoverSource();
+
     editor = ace.edit("editor");
     editor.setTheme("ace/theme/xcode");
     editor.getSession().setMode("ace/mode/sql");
+    editor.getSession().setUseSoftTabs(true);
+    editor.getSession().setTabSize(4);
+
+    // 定期保存代码
+    setInterval(saveSource, 2000);
 
     $('#btn-run-sql').click(executeSQL);
     initTableInfo();

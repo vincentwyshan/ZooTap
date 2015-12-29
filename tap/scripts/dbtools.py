@@ -7,11 +7,14 @@
 __author__ = 'Vincent'
 
 import sys
+import json
 import cPickle
+import datetime
 from optparse import OptionParser
 
 import transaction
 from sqlalchemy import engine_from_config
+from dateutil import parser
 
 from pyramid.paster import (
     get_appsettings,
@@ -19,9 +22,12 @@ from pyramid.paster import (
     )
 
 
+from tap.service.common import dict2api, api2dict, CadaEncoder
 from tap.models import (
     DBSession,
-    Base
+    Base,
+    TapDBConn,
+    TapApiRelease
 )
 
 import tap.models as m
@@ -29,8 +35,8 @@ import tap.models as m
 DATAMODELS = [m.TapUser, m.TapPermission, m.TapUserPermission, m.TapDBConn,
               m.TapProject, m.TapApi, m.api_db, m.api_dbsecondary,
               m.TapParameter, m.TapSource, m.TapApiConfig, m.TapApiRelease,
-              m.TapApiClient, m.TapApiAuth, m.TapApiAccessKey, m.TapApiStats,
-              m.TapApiErrors]
+              m.TapApiClient, m.TapApiAuth, m.TapApiAccessKey, ]
+# m.TapApiStats, m.TapApiErrors]
 
 
 def get_model(table_name):
@@ -94,6 +100,8 @@ def tap_import():
     path = options.path
     f = open(path, 'rb')
     data = cPickle.load(f)
+    # TODO oracle sequence 没有同步 可能导致重复出现违反唯一索引错误
+    # TODO 如果已经定义了业务唯一键的 model, 修改为按照业务唯一键确定唯一性
     for table_data in data:
         md = get_model(table_data[0])
         columns = table_data[1]
@@ -105,6 +113,7 @@ def tap_import():
                     continue
             else:
                 exists = DBSession.query(md)
+                # TODO这里可能由于时间戳不一致，导致数据重复
                 for c in columns:
                     exists = eval("exists.filter_by(%s=row[c])" % c)
                 exists = exists.first()
@@ -117,3 +126,43 @@ def tap_import():
             insert = md.insert().values(row)
             DBSession.bind.execute(insert)
     print 'Import done:', options.path
+
+
+def check_dbconn():
+    """
+    check dbconn updated status when WSGI app start
+    :return:
+    """
+    initdb()
+    connections = DBSession.query(TapDBConn)
+    connections = [(conn.id, conn) for conn in connections]
+    connections = dict(connections)
+
+    releases = DBSession.query(TapApiRelease.id)
+    releases = [r.id for r in releases]
+    for release_id in releases:
+        with transaction.manager:
+            release = DBSession.query(TapApiRelease).get(release_id)
+            config = json.loads(release.content)
+            config = dict2api(config)
+            need_update = False
+            for conn in config.dbconn:
+                timestamp = parser.parse(conn.timestamp)
+                assert isinstance(timestamp, datetime.datetime)
+                if timestamp < connections[conn.id].timestamp:
+                    need_update = True
+                    break
+            for conn in config.dbconn_secondary:
+                timestamp = parser.parse(conn.timestamp)
+                assert isinstance(timestamp, datetime.datetime)
+                if timestamp < connections[conn.id].timestamp:
+                    need_update = True
+                    break
+            if need_update:
+                print 'DB connection update:', config.name
+                dbconn = config.dbconn
+                config.dbconn = [connections[conn.id] for conn in dbconn]
+                dbconn_secondary = config.dbconn_secondary
+                config.dbconn_secondary = [connections[c.id] for c in dbconn_secondary]
+                config = api2dict(config)
+                release.content = json.dumps(config, cls=CadaEncoder)

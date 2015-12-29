@@ -108,7 +108,7 @@ api_dbsecondary = Table('tap_apidbsecondary', Base.metadata,
 class TapApi(Base):
     __tablename__ = 'tap_api'
     id = Column(Integer, Sequence('seq_tapapi_id'), primary_key=True)
-    name = Column(Unicode(30), Sequence('seq_tapapi_id'), nullable=False)
+    name = Column(Unicode(30), nullable=False)
     cnname = Column(Unicode(60))
     description = Column(UnicodeText)
 
@@ -191,6 +191,7 @@ class TapSource(Base):
 Index('tap_source_apiid', TapSource.api_id)
 
 
+# api 固定配置
 class TapApiConfig(Base):
     __tablename__ = 'tap_apiconfig'
     id = Column(Integer, Sequence('seq_tapapiconfig_id'), primary_key=True)
@@ -225,18 +226,66 @@ Index('tap_apirelease_paname_version', TapApiRelease.project_name,
       TapApiRelease.api_name, TapApiRelease.version, unique=True)
 
 
+# 一个客户端只能有一个 token, 其它 TapApiAuth 虽然唯一索引是 Auth-API, 但是token必须引用 TapApiClient
+# 如果 auth type 是 custom, 那么定义一个可执行的代码块, 代码块接收参数, 返回 True 或者 False, 用以确定是否认证成功
+# 认证 成功 则返回 access_key, 认证 失败 则返回 500, content 是错误描述
 class TapApiClient(Base):
+    """
+    验证流程: API 可以授权给多个client
+            1. 首先请求 /api/authorize, 提交 token 或者相应参数
+            2. 验证失败则验证流程终止, 验证成功则返回一个 access_key
+            3. API 调用时提交 access_key
+            4. API 执行时使用 access_key 和 api 配置时使用的 auth_clients 中的 client_id
+               验证access_key 是否有效
+            5. 验证有效执行API返回数据, 无效则返回403错误
+    """
     __tablename__ = 'tap_apiclient'
     id = Column(Integer, Sequence('seq_tapapiclient_id'), primary_key=True)
     name = Column(Unicode(30), nullable=False)
     description = Column(UnicodeText, default=u'')
     token = Column(Unicode(38), nullable=False)
+    auth_type = Column(Enum('TOKEN', 'CUSTOM', name="auth_type",
+                            convert_unicode=True), default='TOKEN')
     uid_create = Column(Integer, ForeignKey('tap_user.id'))
     user_create = relationship('TapUser', backref='clients')
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 Index('tap_apiclient_name', TapApiClient.name, unique=True)
+Index('tap_apiclient_token', TapApiClient.token, unique=True)
 Index('tap_apiclient_uidcreate', TapApiClient.uid_create)
+
+
+class TapApiClientCustomAuth(Base):
+    __tablename__ = 'tap_apiclientcauth'
+    id = Column(Integer, Sequence('seq_tapapiclicauth_id'), primary_key=True)
+
+    client_id = Column(Integer, ForeignKey('tap_apiclient.id'))
+    client = relationship('TapApiClient',
+                          backref=backref('custom_auth', uselist=False))
+
+    source = Column(UnicodeText, default=u"")  # python 代码模式
+
+    uid_create = Column(Integer, ForeignKey('tap_user.id'))
+    user_create = relationship('TapUser', backref='custom_auths')
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+Index('tap_apiclientcauth_cid', TapApiClientCustomAuth.client_id, unique=True)
+
+
+class TapApiClientCustomPara(Base):
+    __tablename__ = 'tap_apiclientcapara'
+    id = Column(Integer, Sequence('seq_tapapiclientcpara_id'), primary_key=True)
+    customauth_id = Column(Integer, ForeignKey('tap_apiclientcauth.id'))
+    customauth = relationship('TapApiClientCustomAuth', backref='paras')
+    name = Column(Unicode(30), nullable=False)
+    val_type = Column(Enum('TEXT', 'INT', 'DECIMAL', 'DATE', name="val_type",
+                           convert_unicode=True), default=u'TEXT')
+    default = Column(UnicodeText, default=u"")
+    absent_type = Column(Enum('NECESSARY', 'OPTIONAL', name="absent_type",
+                              convert_unicode=True), default=u"NECESSARY")
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+Index('tap_apiclicapara_authid', TapApiClientCustomPara.customauth_id)
 
 
 class TapApiAuth(Base):
@@ -255,23 +304,24 @@ class TapApiAuth(Base):
 Index('tap_apiauth_apiid', TapApiAuth.api_id, TapApiAuth.client_id, unique=True)
 Index('tap_apiauth_clientid', TapApiAuth.client_id)
 Index('tap_apiauth_uid_auth', TapApiAuth.uid_auth)
-Index('tap_apiauth_token', TapApiAuth.token)
 
 
 class TapApiAccessKey(Base):
     __tablename__ = 'tap_apiauth_key'
     id = Column(BigInteger, Sequence('seq_tapauthkey_id'), primary_key=True)
-    api_id = Column(Integer, ForeignKey('tap_api.id'))
-    auth_id = Column(Integer, ForeignKey('tap_apiauth.id'), nullable=False)
+    # api_id = Column(Integer, ForeignKey('tap_api.id'))
+    # auth_id = Column(Integer, ForeignKey('tap_apiauth.id'), nullable=False)
     client_id = Column(Integer, ForeignKey('tap_apiclient.id'), nullable=False)
-    token = relationship('TapApiAuth', backref='access_keys')
+    # token = relationship('TapApiAuth', backref='access_keys')
     access_key = Column(Unicode(60))
     access_expire = Column(Integer)
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
-Index('tap_apiauthkey_apiid', TapApiAccessKey.api_id, TapApiAccessKey.client_id)
-Index('tap_apiauthkey_tokenid', TapApiAccessKey.auth_id)
-Index('tap_apiauthkey_accesskey', TapApiAccessKey.access_key)
+Index('tap_apiauthkey_clientid', TapApiAccessKey.client_id)
+# Index('tap_apiauthkey_tokenid', TapApiAccessKey.auth_id)
+Index('tap_apiauthkey_accesskey', TapApiAccessKey.access_key,
+      TapApiAccessKey.client_id)
+
 
 class TapApiStats(Base):
     __tablename__ = 'tap_apistats'

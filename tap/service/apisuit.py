@@ -4,7 +4,7 @@ Standard attribute in response:
     sys_timestamp:  unix_timestamp [int]
     sys_elapse:     [int]
     sys_error:      [string]
-    sys_status: http status code, [int]
+    sys_status:     same with http status code, [int]
 """
 
 __author__ = 'Vincent@Home'
@@ -43,6 +43,7 @@ from tap.service.common import dict2api
 from tap.service.common import CadaEncoder
 from tap.service.common import cu
 from tap.service.common import dbconn_ratio_parse
+from tap.service.interpreter import ParaHandler, CFNInterpreter
 from tap.service.cache import cache_fn, cache_fn1
 from tap.service.auth import valid_key
 from tap.service.exceptions import *
@@ -53,6 +54,9 @@ from tap.models import (
     TapApi,
     TapApiRelease,
 )
+
+
+SOURCES_CONTAINER = {}
 
 
 @view_config(route_name='api_run')
@@ -139,7 +143,8 @@ class Program(object):
         self.ver_num = ver_num
 
         self._cursor = None
-        self._cursors = []
+        self._dbtype = None
+        self._cursors = {}
         self._cursor_secondary = None
         self._conn = None
 
@@ -147,6 +152,7 @@ class Program(object):
 
         # 临时变量
         self._dbconn_ratio_result = None
+        self._dbchoose = [None]
 
     def cursor_secondary(self, db_cfg):
         """
@@ -169,10 +175,11 @@ class Program(object):
         choice = random.randint(1, 100)
         db_choice = self._dbconn_ratio_result[db_cfg.name]
         db_choose = None
-        for db, ratio in db_choice:
+        for db, ratio in db_choice.items():
             if ratio[0] <= choice <= ratio[1]:
                 db_choose = db
                 break
+
         for conn in self.config.dbconn:
             if conn.name == db_choose:
                 return conn
@@ -190,24 +197,40 @@ class Program(object):
                 return self._cursor
             cfg = self.config
             conn_cfg = self.cursor_secondary(cfg.dbconn[0])
+            self._dbchoose[0] = conn_cfg.name
             self._conn = conn_get(conn_cfg.dbtype,
                                   conn_cfg.connstring,
                                   conn_cfg.options)
             self._cursor = self._conn.cursor()
+            self._dbtype = conn_cfg.dbtype
         return self._cursor
 
     def cursor_list(self):
+        """
+
+        :return: 实际返回 name: cursor 的dictionary
+        """
         if not self.config.dbconn or len(self.config.dbconn) <= 1:
             return self._cursors
         if not self._cursors:
-            self._cursors = [self.cursor()]
+            self._cursors[self.config.dbconn[0].name] = \
+                (self._dbtype, self.cursor())
             for _conn in self.config.dbconn[1:]:
+                name = _conn.name
                 _conn = self.cursor_secondary(_conn)
-                self._cursors.append(conn_get(
+                cursor = conn_get(
                     _conn.dbtype,
                     _conn.connstring,
                     _conn.options
-                ))
+                ).cursor()
+                self._dbchoose.append(_conn.name)
+                self._cursors[name] = (_conn.dbtype, cursor)
+        return self._cursors
+
+    def cursor_by_name(self, db_name):
+        if db_name is None:
+            return self._dbtype, self.cursor()
+        return self.cursor_list()[db_name]
 
     def _has_write(self, statement):
         statement = statement.strip().lower()
@@ -217,38 +240,25 @@ class Program(object):
             return True
         return False
 
-    def _para_prepare(self, paras, config_paras):
-        result = {}
-        for para in config_paras:
-            if para.absent_type == 'NECESSARY' and para.name not in paras:
-                raise TapParameterMissing(para.name.encode('utf8'))
-            if para.name not in paras:
-                result[para.name] = self._para_value(para.val_type,
-                                                     para.default)
-            else:
-                result[para.name] = self._para_value(para.val_type,
-                                                     paras[para.name])
-        return result
-
-    def _para_value(self, type_name, value):
-        if value == 'NULL':
-            return None
-        elif value == 'NOW' and type_name == 'DATE':
-            return datetime.datetime.now()
-
-        if type_name == 'TEXT':
-            return value
-        elif type_name == 'INT':
-            return int(value)
-        elif type_name == 'DECIMAL':
-            return decimal.Decimal(value)
-        elif type_name == 'DATE':
-            return parser.parse(value)
-        return value
-
     def _source_prepare(self, source, paras, dbtype):
+        """
+        处理代码中: 值绑定，参数绑定
+        :param source:
+        :param paras:
+        :param dbtype:
+        :return:
+        """
         if dbtype == 'MSSQL':
             return self._source_prepare_pyodbc(source, paras, dbtype)
+
+        # reg_name = ur'([^\w])@([\w+])\b'
+        # if dbtype in ('MYSQL', 'PGSQL'):
+        #     source = re.sub(reg_name, ur'\1%(\2)s', source)
+        # elif dbtype == 'ORACLE':
+        #     source = re.sub(reg_name, ur'\1:\2', source)
+        # # TODO 怎么处理paras
+        # return source, paras
+
         use_paras = []
         for name in paras.keys():
             reg_name = ur'([^\w])@%s\b' % name
@@ -264,9 +274,11 @@ class Program(object):
         return source, paras
 
     def _source_prepare_pyodbc(self, source, paras, dbtype):
+        # pyodbc 不能执行 name binding
         para_position = {}
         positions = []
         for name in paras.keys():
+            # 找出参数名在代码中出现的所有位置
             matches = re.finditer(
                 ur'@%s\b' % name,
                 source)
@@ -291,7 +303,8 @@ class Program(object):
         with measure() as time_used:
             try:
                 if self.config.auth_type == 'AUTH':
-                    access_allow, client_id = valid_key(paras.get('access_key'))
+                    access_allow, client_id = valid_key(
+                        paras.get('access_key'), self.config)
                     stats['client_id'] = str(client_id or '')
                     if not access_allow:
                         raise ApiAuthFail
@@ -299,7 +312,7 @@ class Program(object):
                 func = self.run_stmts
                 if self.config.source.source_type == 'PYTHON':
                     func = self.run_python
-                paras = self._para_prepare(paras, self.config.paras)
+                paras = ParaHandler.prepare(paras, self.config.paras)
                 result = cache_fn(self.config, self.ver_num, func, paras)
                 result['sys_status'] = 200
             except BaseException, e:
@@ -328,6 +341,8 @@ class Program(object):
             elapse.append(['TOTAL', time_used])
             result['sys_timestamp_current'] = time.time()
 
+        # 测试 dbconn choice 用
+        result['sys_dbchoose'] = self._dbchoose
         return result
 
     def run_python(self, paras):
@@ -349,13 +364,23 @@ class Program(object):
                 variables[k] = v
             source = self.config.source.source.encode('utf8')
             source = source.replace('\r', '')
+            source = ('#coding=utf8\r\n%s' % source)
+            hash_source = hash(source)
 
-            exec source in container
+            if hash_source in SOURCES_CONTAINER:
+                container = SOURCES_CONTAINER[hash_source]
+            else:
+                exec source in container
+                SOURCES_CONTAINER[hash_source] = container
+
             container.update(variables)
+
+            # 赋予 数据库连接
             container['g_cursor'] = self.cursor()
-            cursor_list = self.cursor_list()
-            for i in range(len(cursor_list)):
-                container['g_cursor%s' % i] = cursor_list[i]
+            cursors = self.cursor_list()
+            # g_cursor_{dbname}
+            for name, _cursor in cursors.items():
+                container['g_cursor_%s' % str(name)] = _cursor
 
             container['g_result'] = result
         elapse.append(['COMPILE', time_total()])
@@ -380,69 +405,141 @@ class Program(object):
         :return:
         """
         elapse = []  # num, elapse
-        db_result = []
+        db_result = None
+
+        result = OrderedDict()
         with measure() as time_total:
             cursor = self.cursor()
 
             # prepare
             source = self.config.source.source
             charset, source = self.source_charset(source)
-            dbtype = self.config.dbconn[0].dbtype
+            if len(self.config.dbconn) == 0:
+                raise Exception("请先设置数据库")
             writable = self.config.writable
 
-            if dbtype == 'MSSQL':
-                stmts = [source.strip()]
-            else:
-                stmts = stmt_split(source)
+            # if dbtype == 'MSSQL':
+            #     stmts = [source.strip()]
+            # else:
+            #     stmts = stmt_split(source)
+            stmts = stmt_split(source)
 
+            _last_cursor = None
             for i in range(len(stmts)):
                 stmt = stmts[i]
                 with measure() as time_used:
-                    self.run_stmt(cursor, stmt, paras, dbtype, writable, charset)
+                    _last_cursor = self.run_stmt(stmt, paras, writable,
+                                               charset, result, elapse)[2]
                 elapse.append(['ST.%s' % i, time_used()])
 
-            if cursor.description:
-                with measure() as time_cu:
-                    rows = [[val_universal(v, dbtype) for v in row]
-                            for row in cursor.fetchall()]
-                elapse.append(['UNIVERSAL_CHR', time_cu()])
-                cols = [col[0] for col in cursor.description]
-                db_result.append(cols)
-                db_result.extend(rows)
+            if _last_cursor:
+                # 使用最后一个 cursor 获取最终数据
+                db_result = self.bind_result(_last_cursor, 'table', self._dbchoose,
+                                             elapse)
         elapse.append(['EXECUTION', time_total()])
 
-        result = OrderedDict(
-            table=db_result,
-            sys_elapse=elapse,
-            sys_timestamp_exec=time.time()
-        )
+        result['table'] = db_result
+        result['sys_elapse'] = elapse
+        result['sys_timestamp_exec'] = time.time()
 
         return result
 
-    def run_stmt(self, cursor, stmt, paras, dbtype, writable, charset):
+    def bind_result(self, cursor, name, dbtype, elapse):
+        result = []
+        if cursor.description:
+            with measure() as time_cu:
+                rows = cursor.fetchall()
+                if rows:
+                    rows = [[val_universal(v, dbtype) for v in row]
+                            for row in rows]
+            elapse.append(['UNIVERSAL_CHR-%s' % name, time_cu()])
+            cols = [col[0] for col in cursor.description]
+            result.append(cols)
+            result.extend(rows)
+        return result
+
+    def run_stmt(self, stmt, paras, writable, charset, result, elapse):
         stmt = stmt.strip(u';')
 
-        if dbtype == 'MYSQL':
-            stmt = stmt.replace(u'%', u'%%')
+        code_info = CFNInterpreter.parse_one(stmt)
 
-        stmt, para = self._source_prepare(stmt, paras, dbtype)
+        if self.run_stmt_case(code_info, paras) is not True:
+            return stmt, paras, None
 
         # writable check
         if not writable and self._has_write(stmt):
             raise TapNotAllowWrite
 
-        if para:
-            if charset:
-                cursor.execute(stmt.encode(charset), para)
-            else:
-                cursor.execute(stmt, para)
-        else:
-            if charset:
-                cursor.execute(stmt.encode(charset))
-            else:
-                cursor.execute(stmt)
+        # db 选择
+        dbtype, cursor = self.cursor_by_name(code_info.db_name)
 
-        return stmt, para
+        # 处理百分号问题
+        if dbtype in ('MYSQL', 'PGSQL'):
+            stmt = code_info.script.replace(u'%', u'%%')
+
+        stmt, para = self._source_prepare(stmt, paras, dbtype)
+
+        if charset:
+            stmt = stmt.encode(charset)
+
+        if para:
+            cursor.execute(stmt, para)
+        else:
+            cursor.execute(stmt)
+
+        # export variables
+        self.run_stmt_export(code_info, paras, cursor)
+
+        # bind result
+        if code_info.bind:
+            data = self.bind_result(cursor, code_info.bind, dbtype, elapse)
+            result[code_info.bind] = data
+
+        return stmt, paras, cursor
+
+    def run_stmt_case(self, code_info, paras):
+        """
+        cfn_case 检查, 仅接受值检查
+        :return:
+        """
+        if not code_info.case_statement:
+            return True
+
+        case_statement = code_info.case_statement
+        for para_name in paras.keys():
+            case_statement = re.sub(ur'\b%s\b' % para_name, "paras['%s']" %
+                                    para_name, case_statement)
+        result = eval(case_statement)
+        print case_statement, result
+        return result
+
+    def run_stmt_export(self, code_info, paras, cursor):
+        """
+        cfn_export, 导出变量
+        :param code_info:
+        :param paras:
+        :return:
+        """
+        if not code_info.export:
+            return
+
+        if not cursor.description:
+            script = code_info.script
+            script = (script.encode('utf8') if isinstance(script, unicode)
+                      else script)
+            raise Exception("cfn_export failed: %s" % script)
+        cols = [c[0] for c in cursor.description]
+        row = cursor.fetchone()
+        if not row:
+            script = code_info.script
+            script = (script.encode('utf8') if isinstance(script, unicode)
+                      else script)
+            raise Exception("cfn_export failed: %s" % script)
+        row = dict(zip(cols, row))
+        for name in code_info.export:
+            if name not in row:
+                raise Exception("cfn_export failed: not found field %s" % name)
+            paras[name] = row[name]
 
     def _report_stats_exc(self, stats, exc_message, exc_trace):
         exc_type, exc_value, tb = sys.exc_info()

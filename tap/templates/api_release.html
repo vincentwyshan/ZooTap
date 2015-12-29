@@ -71,7 +71,7 @@
                     </select>
                     <span style="margin:4px;" data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
                           data-placement="right"
-                          data-content="OPEN: 公开访问<br>AUTH: 使用AuthToken获得AccessKey访问API<br><i class='red fa fa-warning'></i>&nbsp;授权类型会应用到所有已发布版本!"
+                          data-content="OPEN: 公开访问<br>AUTH: 使用AuthToken获得AccessKey访问API"
                           title="" data-original-title="授权类型        ">?</span>
                 </div>
             </div>
@@ -129,6 +129,7 @@
                 <th>数据库</th>
                 <th>发布者</th>
                 <th>API地址</th>
+                <th>授权类型</th>
                 <th>发布说明</th>
                 <th>时间</th>
             </tr>
@@ -141,6 +142,7 @@
                 <td>${','.join(release_db[release.id].keys())}</td>
                 <td>${release.user_release.name}</td>
                 <td><b class="green">/api/${release.project_name}/${release.api_name}/v${release.version}</b></td>
+                <td>${release_content[release.id].auth_type}</td>
                 %if len(release.notes) > 13:
                 <td data-toggle="tooltip" title="${release.notes.replace(u'"', ur'\"')}">${release.notes[:10] + u'...'}</td>
                 %else:

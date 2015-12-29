@@ -4,6 +4,9 @@ $(function () {
             type: 'spline',
             zoomType: 'x'
         },
+        credits: {
+            enabled: false
+        },
         title: {
             text: '访问量'
         },

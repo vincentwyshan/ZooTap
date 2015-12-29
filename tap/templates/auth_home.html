@@ -22,7 +22,7 @@
                 <th>#</th>
                 <th>客户端名称</th>
                 <th>授权人</th>
-                <th>TOKEN</th>
+                <!--<th>TOKEN</th>-->
                 <th>时间</th>
             </tr>
             </thead>
@@ -30,9 +30,9 @@
             %for auth in auth_list:
             <tr>
                 <td>${loop.index + 1}</td>
-                <td><a href="/management/api/${api.id}/auth/${auth.id}/${auth.auth_client.id}">${auth.auth_client.name}</a></td>
+                <td><a href="/management/client/${auth.auth_client.id}">${auth.auth_client.name}</a></td>
                 <td>${auth.user_auth.name}</td>
-                <td><a class="auth-token" href="/management/action?action=displaytoken&auth_id=${auth.id}" style="cursor:pointer; text-decoration:none;">......</a></td>
+                <!--<td><a class="auth-token" href="/management/action?action=displaytoken&auth_id=${auth.id}" style="cursor:pointer; text-decoration:none;">......</a></td>-->
                 <td>${auth.created}</td>
             </tr>
             %endfor

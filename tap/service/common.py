@@ -30,6 +30,8 @@ def conn_get(dbtype, connstring, options=None):
         conns = connstring.split(';')
         conns = [v.split('=') for v in conns]
         conns = dict([(str(k), v) for k, v in conns])
+        if 'port' in conns:
+            conns['port'] = int(conns['port'])
         import MySQLdb
         conns.update(options)
         conn = MySQLdb.connect(**conns)
@@ -49,6 +51,7 @@ def conn_get(dbtype, connstring, options=None):
         import pymongo
         conn = pymongo.MongoClient(**conns)
     return conn
+
 
 def dbconn_ratio_parse(dbconn_ratio):
     """dbconn_ratio example:
@@ -91,6 +94,7 @@ def api2dict(api):
         created=api.created,
         timestamp=api.timestamp,
         paras=[],
+        auth_clients=[],
         project=dict(
             name=api.project.name,
             cnname=api.project.name,
@@ -119,7 +123,10 @@ def api2dict(api):
             timestamp=api.source.timestamp
         )
     )
-    for dbconn in api.get_dbconn():
+    conns = api.dbconn
+    if hasattr(api, 'get_dbconn'):
+        conns = api.get_dbconn()
+    for dbconn in conns:
         result['dbconn'].append(dict(
             id=dbconn.id,
             name=dbconn.name,
@@ -131,17 +138,20 @@ def api2dict(api):
             created=dbconn.created,
             timestamp=dbconn.timestamp
         ))
-    for conn in api.get_dbconn_secondary():
+    conns_secondary = api.dbconn_secondary
+    if hasattr(api, 'get_dbconn_secondary'):
+        conns_secondary = api.get_dbconn_secondary()
+    for conn in conns_secondary:
         result['dbconn_secondary'].append(dict(
-            id=dbconn.id,
-            name=dbconn.name,
-            dbtype=dbconn.dbtype,
-            connstring=dbconn.connstring,
-            options=dbconn.options,
-            uid_create=dbconn.uid_create,
-            description=dbconn.description,
-            created=dbconn.created,
-            timestamp=dbconn.timestamp
+            id=conn.id,
+            name=conn.name,
+            dbtype=conn.dbtype,
+            connstring=conn.connstring,
+            options=conn.options,
+            uid_create=conn.uid_create,
+            description=conn.description,
+            created=conn.created,
+            timestamp=conn.timestamp
         ))
     for para in api.paras:
         result['paras'].append(dict(
@@ -154,7 +164,27 @@ def api2dict(api):
             timestamp=para.created
         ))
 
+    for auth in api.auth_clients:
+        # 这里 save 下来的 token 不能使用
+        result['auth_clients'].append(dict(
+            id=auth.id, client_id=auth.client_id, token=auth.token,
+            uid_auth=auth.uid_auth, #disable=auth.disable,
+            created=auth.created, timestamp=auth.timestamp
+        ))
+
     return result
+
+    id = Column(Integer, Sequence('seq_tapapiauth_id'), primary_key=True)
+    api_id = Column(Integer, ForeignKey('tap_api.id'))
+    api = relationship('TapApi', backref='auth_clients')
+    client_id = Column(Integer, ForeignKey('tap_apiclient.id'), nullable=False)
+    auth_client = relationship('TapApiClient', backref='auth_list')
+    token = Column(Unicode(38), nullable=False)
+    uid_auth = Column(Integer, ForeignKey('tap_user.id'))
+    user_auth = relationship('TapUser', backref='auth_apis')
+    disable = Column(Boolean, default=False)
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 
 
 def dict2api(api_in_dict):

@@ -1,6 +1,8 @@
 <%inherit file="base.html" />
 
 <%block name="meta_head">
+<script src="/static/ace-editor/ace.js"></script>
+
 <style type="text/css">
     blockquote .row div:hover{
         border-color: #E2EAF2;
@@ -16,31 +18,111 @@
         <div class="widget-box transparent" style="margin-bottom:20px;">
             <div class="widget-header widget-header-large">
                 <h4 class="widget-title grey lighter">
-                    ${client.name} <small>授权API</small>
+                    ${client.name} <small>客户端</small>
                 </h4>
             </div>
         </div>
-        %for project_id, api_groups in project_apis.items():
-        <blockquote style="padding-top:0;padding-bottom:0;">
-            <h5><a class="grey" href="/management/project/${project_id}">${api_groups[0][0].project.name} - ${api_groups[0][0].project.cnname}</a></h5>
 
-            %for api_list in api_groups:
-            <div class="row">
-                %for api in api_list:
-                <div class="col-xs-4" style="min-height:50px;padding-top:8px;padding-bottom:8px;">
-                    <small><a href="/management/api/${api.id}">${api.name} (${api.cnname})</a></small>
-                    %if api.description:
-                    <p style="font-size:13px;" class="grey" ${('title="%s"' % api.description.replace('"', r'\"')) if len(api.description) >= 100 else ''}><i
-                        class="fa fa-pagelines"></i>&nbsp;&nbsp;
-                        ${(api.description if len(api.description) < 100 else api.description[:98] + '...').strip().replace('\n', '<br>').replace('\t', '&nbsp;'*4)}
-                    </p>
-                    %endif
+
+        <div id="accordion" class="accordion-style1 panel-group">
+            ## 该客户端授权API列表
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#auth-api">
+                            <i class="bigger-110 ace-icon fa fa-angle-right" data-icon-hide="ace-icon fa fa-angle-down" data-icon-show="ace-icon fa fa-angle-right"></i>
+                            &nbsp;授权API列表
+                        </a>
+                    </h4>
                 </div>
-                %endfor
+
+                <div class="panel-collapse collapse" id="auth-api" style="height: 0px;">
+                    <div class="panel-body">
+                    %for project_id, api_groups in project_apis.items():
+                    <blockquote style="padding-top:0;padding-bottom:0;">
+                        <h5><a class="grey" href="/management/project/${project_id}">${api_groups[0][0].project.name} - ${api_groups[0][0].project.cnname}</a></h5>
+
+                        %for api_list in api_groups:
+                        <div class="row">
+                            %for api in api_list:
+                            <div class="col-xs-4" style="min-height:50px;padding-top:8px;padding-bottom:8px;">
+                                <small><a href="/management/api/${api.id}">${api.name} (${api.cnname})</a></small>
+                                %if api.description:
+                                <p style="font-size:13px;" class="grey" ${('title="%s"' % api.description.replace('"', r'\"')) if len(api.description) >= 100 else ''}><i
+                                    class="fa fa-pagelines"></i>&nbsp;&nbsp;
+                                    ${(api.description if len(api.description) < 100 else api.description[:98] + '...').strip().replace('\n', '<br>').replace('\t', '&nbsp;'*4)}
+                                </p>
+                                %endif
+                            </div>
+                            %endfor
+                        </div>
+                        %endfor
+                    </blockquote>
+                    %endfor
+                    </div>
+                </div>
             </div>
-            %endfor
-        </blockquote>
-        %endfor
+
+            ## 认证配置
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapse" data-toggle="collapse" data-parent="#accordion" href="#client-config">
+                            <i class="ace-icon fa fa-angle-down bigger-110" data-icon-hide="ace-icon fa fa-angle-down" data-icon-show="ace-icon fa fa-angle-right"></i>
+                            &nbsp;配置客户端
+                        </a>
+                    </h4>
+                </div>
+
+                <div class="panel-collapse collapse" id="client-config">
+                    <div class="panel-body">
+                        <form class="form-horizontal">
+                        <div class="col-sm-2"></div>
+                        <div class="col-sm-4">
+                            <input type="hidden" name="action" value="clientsave"/>
+                            <input type="hidden" name="client_id" value="${client.id}"/>
+                            <select data-placeholder="认证方式..." name="auth_type" class="chosen-select col-xs-12">
+                                <option ${'selected' if client.auth_type == 'TOKEN' else ''} value="TOKEN">TOKEN</option>
+                                <option ${'selected' if client.auth_type == 'CUSTOM' else ''} value="CUSTOM">CUSTOM</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <a id="save-config" style="margin-top: 2px" class="btn btn-xs btn-primary no-border" href="#"><i class="ace-icon fa fa-save"></i>保存</a>
+                            <a id="new-para" client_id="${client.custom_auth.id}" style="margin-top: 2px;display: ${'none' if client.auth_type=='TOKEN' else ''};"
+                               class="btn btn-xs btn-success no-border"
+                               href="#">
+                                <i class="ace-icon fa fa-plus bigger-130"></i>增加参数
+                            </a>
+                            <a id="refresh-token" style="margin-top: 2px; display: ${'none' if client.auth_type=='CUSTOM' else ''};" class="btn btn-xs btn-success no-border"
+                               href="#">
+                                <i class="ace-icon fa fa-plus"></i>刷新TOKEN
+                            </a>
+                        </div>
+                        <%include file="./client_detail_source.html" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion" href="#access-key">
+                            <i class="bigger-110 ace-icon fa fa-angle-right" data-icon-hide="ace-icon fa fa-angle-down" data-icon-show="ace-icon fa fa-angle-right"></i>
+                            &nbsp;AccessKey 列表
+                        </a>
+                    </h4>
+                </div>
+
+                <div class="panel-collapse collapse" id="access-key" style="height: 0px;">
+                    <div class="panel-body">
+                        <%include file="./client_accesskeys.html" />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 </div>
 
@@ -48,5 +130,6 @@
 
 <%block name="jsblock">
 <script>
+    <%include file="./client_detail.js"/>
 </script>
 </%block>

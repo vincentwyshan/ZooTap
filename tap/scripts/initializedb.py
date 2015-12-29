@@ -20,6 +20,7 @@ from tap.models import (
     TapUser,
     TapProject,
     TapPermission,
+    TapUserPermission,
 )
 
 
@@ -81,17 +82,38 @@ def init_permision():
 
 
 def add_api_permission(project, api):
-    add_permission('%s.%s' % (project.name, api.name), u'接口:%s' % api.name)
-    add_permission('%s.%s.%s' % (project.name, api.name, 'config'),
-                   u'接口配置:%s' % api.name)
-    add_permission('%s.%s.%s' % (project.name, api.name, 'release'),
-                   u'接口发布:%s' % api.name)
-    add_permission('%s.%s.%s' % (project.name, api.name, 'auth'),
-                   u'接口授权:%s' % api.name)
-    add_permission('%s.%s.%s' % (project.name, api.name, 'stats'),
-                   u'接口统计:%s' % api.name)
-    add_permission('%s.%s.%s' % (project.name, api.name, 'cache'),
-                   u'接口缓存管理:%s' % api.name)
+    result = []
+    result.append(
+        add_permission('%s.%s' % (project.name, api.name), u'接口:%s' % api.name)
+    )
+    result.append(
+        add_permission('%s.%s.%s' % (project.name, api.name, 'config'),
+                       u'接口配置:%s' % api.name))
+    result.append(
+        add_permission('%s.%s.%s' % (project.name, api.name, 'release'),
+                       u'接口发布:%s' % api.name))
+    result.append(
+        add_permission('%s.%s.%s' % (project.name, api.name, 'auth'),
+                       u'接口授权:%s' % api.name))
+    result.append(
+        add_permission('%s.%s.%s' % (project.name, api.name, 'stats'),
+                       u'接口统计:%s' % api.name))
+    result.append(
+        add_permission('%s.%s.%s' % (project.name, api.name, 'cache'),
+                       u'接口缓存管理:%s' % api.name))
+    return result
+
+
+def add_user_permission(user, permission, view=False, edit=False,
+                        add=False, delete=False):
+    user_permission = TapUserPermission()
+    user_permission.user_id = user.id
+    user_permission.permission_id = permission.id
+    user_permission.a_view = view
+    user_permission.a_edit = edit
+    user_permission.a_add = add
+    user_permission.a_delete = delete
+    DBSession.add(user_permission)
 
 
 def add_permission(name, desc):
@@ -103,3 +125,4 @@ def add_permission(name, desc):
     permission.name = name
     permission.description = desc
     DBSession.add(permission)
+    return permission

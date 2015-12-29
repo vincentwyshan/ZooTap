@@ -117,6 +117,8 @@ def gen_active(request):
         result['active_client'] = True
     elif request.path.startswith('/management/user'):
         result['active_users'] = True
+    elif request.path.startswith('/management/docs'):
+        result['active_docs'] = True
     return result
 
 

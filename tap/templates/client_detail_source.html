@@ -1,0 +1,109 @@
+
+<style tyle="text/css">
+    form select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    }
+</style>
+
+<div class="col-xs-12" style="margin-top:20px;">
+    <textarea type="text" id="form-field-1" name="description" placeholder="说明" class="col-xs-8">${client.description}</textarea>
+</div>
+
+<div id="custom-settings" class="col-xs-12" style="margin-top: 5px; display: ${'none' if client.auth_type=='TOKEN' else ''}">
+    <div>
+        %for para in client.custom_auth.paras:
+        <div class="form-group" style="margin-top:15px">
+            <div class="col-xs-2">
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        @
+                    </span>
+                    <input name="para-name-${para.id}" value="${para.name}" class="form-control input-mask-phone" type="text" id="form-field-mask-2" placeholder="参数名">
+                </div>
+            </div>
+
+            <div class="col-xs-3">
+                <input name="para-default-${para.id}" value="${para.default}" type="text" placeholder="默认值" class="col-xs-12">
+            </div>
+
+            <div class="col-xs-3">
+                <select data-toggle="tooltip" title="参数类型" name="para-val_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                    <option ${
+                    'selected' if para.val_type=='TEXT' else ''}>TEXT</option>
+                    <option ${
+                    'selected' if para.val_type=='INT' else ''}>INT</option>
+                    <option ${
+                    'selected' if para.val_type=='DECIMAL' else ''}>DECIMAL</option>
+                    <option ${
+                    'selected' if para.val_type=='DATE' else ''}>DATE</option>
+                </select>
+            </div>
+
+            <div class="col-xs-3">
+                <select data-toggle="tooltip" title="是否可选参数" name="para-absent_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                    <option ${
+                    'selected' if para.absent_type =='NECESSARY' else ''} value="NECESSARY">必须</option>
+                    <option ${
+                    'selected' if para.absent_type =='OPTIONAL' else ''} value="OPTIONAL">可选</option>
+                </select>
+            </div>
+
+            <div class="col-xs-1 hidden-sm hidden-xs action-buttons" style="padding-top: 8px">
+                <a paraid="${para.id}" class="red delete-para" href="#"> <i class="ace-icon fa fa-trash-o bigger-130"></i> </a>
+            </div>
+
+        </div>
+        %endfor
+
+
+        <div id="sample-para" style="display:none">
+            <div class="form-group" style="margin-top:15px">
+                <div class="col-xs-2">
+                    <div class="input-group">
+                    <span class="input-group-addon">
+                        @
+                    </span>
+                        <input name="para-name-{{para.id}}" value="{{para.name}}" class="form-control input-mask-phone" type="text" id="form-field-mask-2" placeholder="参数名">
+                    </div>
+                </div>
+
+                <div class="col-xs-3">
+                    <input name="para-default-{{para.id}}" value="{{para.default}}" type="text" placeholder="默认值" class="col-xs-12">
+                </div>
+
+                <div class="col-xs-3">
+                    <select name="para-val_type-{{para.id}}" placeholder="" class="col-xs-12 form-control">
+                        <option>TEXT</option>
+                        <option>INT</option>
+                        <option>DECIMAL</option>
+                        <option>DATE</option>
+                    </select>
+                </div>
+
+                <div class="col-xs-3">
+                    <select data-toggle="tooltip" title="" name="para-absent_type-{{para.id}}" placeholder="" class="col-xs-12 form-control" data-original-title="是否可选参数">
+                        <option value="NECESSARY">必须</option>
+                        <option value="OPTIONAL">可选</option>
+                    </select>
+                </div>
+
+                <div class="col-xs-1 hidden-sm hidden-xs action-buttons" style="padding-top: 8px">
+                    <a paraid="{{para.id}}" class="red delete-para" href="#"> <i class="ace-icon fa fa-trash-o bigger-130"></i> </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <input type="hidden" name="source" />
+    <div id="editor" style="height:400px;border: 1px solid #c5d0dc;">${client.custom_auth.source}</div>
+
+</div>
+
+<div id="token-block" class="col-xs-12" style="margin-top: 20px; display: ${'none' if client.auth_type=='CUSTOM' else ''}">
+    <pre style="text-align:center;border-radius: 0;">${client.token}</pre>
+</div>
+

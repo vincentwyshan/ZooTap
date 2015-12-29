@@ -11,6 +11,7 @@ from pyramid.security import Allow, Deny
 
 import transaction
 
+from tap.service import exceptions
 from tap.models import (
     DBSession,
     TapUser,
@@ -23,7 +24,10 @@ from tap.models import (
 
 def groupfinder(user_id, request):
     if user_id:
-        return [bind_user(request, user_id).name]
+        user = bind_user(request, user_id)
+        if user:
+            return [user.name]
+        raise exceptions.UserNotAvailable
     return [Everyone]
 
 
@@ -152,7 +156,7 @@ def bind_user(request, user_id):
         with transaction.manager:
             user = DBSession.query(TapUser).get(user_id)
             if not user:
-                return
+                return None
             user = [(k, getattr(user, k)) for k in user.__table__.columns.keys()]
             user = dict(user)
             user = TmpContainer.load(user)

@@ -2,7 +2,7 @@
 
 <%block name="pagecontent">
 <div class="row" style="height:53px">
-    <a data-toggle="modal" href="#write" data-target="#myModal" class="btn-new-mail pull-right">
+    <a data-toggle="modal" href="#write" id="btn-new-conn" class="btn-new-mail pull-right">
 		<span class="btn btn-primary no-border">
 			<i class="ace-icon fa fa-plus bigger-130"></i>
 			<span class="bigger-110">添加</span>
@@ -14,10 +14,8 @@
 			操作 <i class="ace-icon fa fa-angle-down icon-on-right"></i>
 		</button>
 		<ul class="dropdown-menu">
-			<li> <a href="#">开始编辑</a> </li>
-			<li> <a href="#">停止编辑</a> </li>
-			<li class="divider"></li>
-			<li> <a href="#">删除</a> </li>
+			<li> <a id="start-edit" href="#">开始编辑</a> </li>
+			<li> <a id="stop-edit" href="#">停止编辑</a> </li>
 		</ul>
 	</div>
 
@@ -36,7 +34,7 @@
 		</thead>
 		<tbody>
 		%for conn in conns:
-		<tr>
+		<tr data-id="${conn.id}" data-description="${conn.description | h}">
 			<td><a href="/management/database/${conn.id}">${conn.name}</a></td>
 			<td>${conn.dbtype}</td>
 			<td>${conn.user_create.name}</td>
@@ -68,7 +66,8 @@
 					名称
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="name" placeholder="名称" class="col-xs-10">
+                    <input type="hidden" name="id" />
+					<input type="text" name="name" placeholder="名称" class="col-xs-10">
 				</div>
 			</div>
 
@@ -77,8 +76,8 @@
 					DB类型
 				</label>
 				<div class="col-sm-9">
-					<select name="dbtype" id="form-field-1" placeholder="" class="chosen-select col-xs-10">
-						<option>选择DB类型</option>
+					<select name="dbtype" placeholder="" class="chosen-select col-xs-10">
+						<option value="">选择DB类型</option>
 						<option>ORACLE</option>
 						<option>MSSQL</option>
 						<option>MYSQL</option>
@@ -92,7 +91,7 @@
 					连接字符串
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="connstring" placeholder="连接字符串" class="col-xs-10">
+					<input type="text" name="connstring" placeholder="连接字符串" class="col-xs-10">
 				</div>
 			</div>
 
@@ -101,11 +100,11 @@
 					说明
 				</label>
 				<div class="col-sm-9">
-					<textarea type="text" id="form-field-1" name="description" placeholder="说明" class="col-xs-10"></textarea>
+					<textarea type="text" name="description" placeholder="说明" class="col-xs-10"></textarea>
 				</div>
 			</div>
 
-			<div class="form-group">
+			<div style="display:none" class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
 					选项
 				</label>
@@ -118,8 +117,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button id="test-conn" type="button" class="btn btn-default">测试连接</button>
-        <button id="save-conn" type="button" class="btn btn-primary">保存</button>
+        <button id="test-conn" type="button" class="btn btn-default no-border">测试连接</button>
+        <button id="save-conn" type="button" class="btn btn-primary no-border">保存</button>
       </div>
     </div>
   </div>
@@ -127,7 +126,47 @@
 </%block>
 
 <%block name="jsblock">
+<style>
+    .cursor-pointer{
+        cursor: pointer;
+    }
+    .cursor-pointer td:first-child:before{
+        float: left;
+        display: inline;
+        content: "\f14b";
+        font-family: FontAwesome;
+        font-size: 13px;
+        font-weight: 400;
+        color: #428bca;
+        margin-right: 5px;
+    }
+    .cursor-pointer td:first-child{
+    }
+</style>
 <script>
+function editDB(){
+    $('tr').removeClass('success');
+    $(this).addClass('success');
+    var tr = $(this);
+    $('input[name=name]').attr('disabled', true);
+    $('input[name=id]').val(tr.attr('data-id'));
+    $('input[name=name]').val(tr.children('td:nth-child(1)').text());
+    $('select[name=dbtype]').val(tr.children('td:nth-child(2)').text());
+    $('select[name=dbtype]').trigger("chosen:updated");
+    $('input[name=connstring]').val(tr.children('td:nth-child(5)').text());
+    $('textarea[name=description]').val(tr.attr('data-description'));
+    $('textarea[name=options]').val('');
+    $('#myModal').modal();
+}
+function startEdit(){
+    $('table tbody tr').addClass('cursor-pointer');
+    $('table tbody tr').bind('click', editDB);
+}
+function stopEdit(){
+    $('table tbody tr').removeClass('cursor-pointer');
+    $('table tbody tr').unbind('click');
+    $('tr').removeClass('success');
+}
 function testConn(){
 	$('#test-conn').attr('disable', true);
 	$('#save-conn').attr('disable', true);
@@ -149,7 +188,17 @@ function saveConn(){
 	$('#test-conn').attr('disable', true);
 	$('#save-conn').attr('disable', true);
 	$('#submit-action').val('connsave');
+	var hasDisabled = false;
+	if($('input[name=name]').attr('disabled') != null){
+	    hasDisabled = true;
+    }
+    if(hasDisabled == true){
+        $('input[name=name]').removeAttr('disabled');
+    }
 	var paras = $('#new-conn').serialize();
+    if(hasDisabled == true){
+        $('input[name=name]').attr('disabled', true);
+	}
 	$.getJSON('/management/action', paras, function(response){
 		if(response.success == 1){
 			window.location.reload();
@@ -161,9 +210,23 @@ function saveConn(){
 		}
 	})
 }
+function newConn(){
+    $('input[name=name]').removeAttr('disabled');
+    $('input[name=id]').val('');
+    $('input[name=name]').val('');
+    $('select[name=dbtype]').val('');
+    $('select[name=dbtype]').trigger("chosen:updated");
+    $('input[name=connstring]').val('');
+    $('textarea[name=description]').val('');
+    $('textarea[name=options]').val('');
+    $('#myModal').modal();
+}
 $(document).ready(function(){
+    $('#btn-new-conn').click(newConn);
 	$('#test-conn').click(testConn);
 	$('#save-conn').click(saveConn);
+	$('#start-edit').click(startEdit);
+	$('#stop-edit').click(stopEdit);
 })
 </script>
 </%block>

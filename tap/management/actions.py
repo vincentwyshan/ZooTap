@@ -17,7 +17,8 @@ from tap.security import AuthControl
 from tap.service.common import (
     conn_get, api2dict, CadaEncoder, dbconn_ratio_parse, dict2api
 )
-from tap.scripts.initializedb import (add_permission, add_api_permission)
+from tap.scripts.initializedb import (
+    add_permission, add_api_permission, add_user_permission)
 from tap.models import (
     DBSession,
     TapDBConn,
@@ -30,6 +31,8 @@ from tap.models import (
     TapParameter,
     TapApiRelease,
     TapApiClient,
+    TapApiClientCustomAuth,
+    TapApiClientCustomPara,
     TapApiAuth,
     TapApiErrors,
 )
@@ -70,6 +73,10 @@ def perm_check(func):
             perm = '%s.release:add' % a.api_name(params['api_id'])
         elif 'clientsave' == action:
             perm = 'SYS_CLIENT:edit'
+        elif 'clientparanew' == action:
+            perm = 'SYS_CLIENT:edit'
+        elif 'clientparadelete' == action:
+            perm = 'SYS_CLIENT:delete'
         elif 'authclientadd' == action:
             perm = '%s.auth:add' % a.api_name(params['api_id'])
         elif 'displaytoken' == action:
@@ -126,8 +133,12 @@ class Action(object):
             result = self.api_save()
         elif 'paranew' == action:
             result = self.para_new()
+        elif 'clientparanew' == action:
+            result = self.client_paranew()
         elif 'paradelete' == action:
             result = self.para_delete()
+        elif 'clientparadelete' == action:
+            result = self.client_paradelete()
         elif 'releasesave' == action:
             result = self.release_save()
         elif 'clientsave' == action:
@@ -175,23 +186,29 @@ class Action(object):
         request = self.request
         conn_id = request.params.get('id')
         try:
-
             with transaction.manager:
                 conn = None
                 name_valid(request.params.get('name'))
                 if conn_id:
                     conn = DBSession.query(TapDBConn).get(conn_id)
                 else:
+                    # 检查是否存在
+                    name = request.params.get('name').strip()
+                    conn = DBSession.query(TapDBConn).filter_by(
+                        name=name).first()
+                    if conn:
+                        raise Exception("名称重复: %s" % name.encode('utf8'))
                     conn = TapDBConn()
                     DBSession.add(conn)
                     conn.uid_create = request.userid
-                    assert request.params.get('dbtype') not in ('', None), \
-                        '数据库类型不能为空'
-                    assert request.params.get('connstring') not in ('',  None), \
-                        '连接字符串不能为空'
-                    conn.name = request.params.get('name').strip()
+                    conn.name = name
                     conn.dbtype = request.params.get('dbtype')
                     conn.connstring = request.params.get('connstring')
+
+                assert request.params.get('dbtype') not in ('', None), \
+                        '数据库类型不能为空'
+                assert request.params.get('connstring') not in ('',  None), \
+                        '连接字符串不能为空'
 
                 obj_setattr(conn, 'name', request)
                 obj_setattr(conn, 'dbtype', request)
@@ -260,8 +277,12 @@ class Action(object):
                     source = TapSource()
                     DBSession.add(source)
                     api.source = source
-                    add_api_permission(DBSession.query(TapProject).get(
-                        api.project_id), api)
+                    permissions = add_api_permission(
+                        DBSession.query(TapProject).get(api.project_id), api)
+                    DBSession.flush()
+                    for perm in permissions:
+                        user = self.request.user
+                        add_user_permission(user, perm, True, True, True, True)
                     changed = True
                 changed = obj_setattr(api, 'name', request) or changed
                 changed = obj_setattr(api, 'cnname', request) or changed
@@ -404,6 +425,25 @@ class Action(object):
             result["message"] = str(e)
         return result
 
+    def client_paranew(self):
+        result = dict(success=0, message="")
+        request = self.request
+        auth_id = request.params.get('id')
+        try:
+
+            with transaction.manager:
+                auth_id = int(auth_id)
+                para = TapApiClientCustomPara(customauth_id=auth_id,
+                                              name='__None__')
+                DBSession.add(para)
+                DBSession.flush()
+                result["para_id"] = para.id
+                result["para_name"] = '__None__'
+                result["success"] = 1
+        except BaseException, e:
+            result["message"] = str(e)
+        return result
+
     def para_delete(self):
         result = dict(success=0, message="")
         request = self.request
@@ -413,6 +453,21 @@ class Action(object):
             with transaction.manager:
                 para_id = int(para_id)
                 para = DBSession.query(TapParameter).get(para_id)
+                DBSession.delete(para)
+                result["success"] = 1
+        except BaseException, e:
+            result["message"] = str(e)
+        return result
+
+    def client_paradelete(self):
+        result = dict(success=0, message="")
+        request = self.request
+        para_id = request.params.get('id')
+        try:
+
+            with transaction.manager:
+                para_id = int(para_id)
+                para = DBSession.query(TapApiClientCustomPara).get(para_id)
                 DBSession.delete(para)
                 result["success"] = 1
         except BaseException, e:
@@ -463,14 +518,27 @@ class Action(object):
                 if client_id:
                     client = DBSession.query(TapApiClient).get(client_id)
                 else:
-                    assert name not in ('', None), 'Name cant None'
+                    assert name not in ('', None), '名称不能为空'
                     client = TapApiClient(name=name)
                     client.uid_create = self.request.userid
                     client.token = str(uuid.uuid4())
+                    custom_auth = TapApiClientCustomAuth()
+                    custom_auth.uid_create = self.request.userid
+                    client.custom_auth = custom_auth
                     DBSession.add(client)
 
                 obj_setattr(client, 'name', self.request)
                 obj_setattr(client, 'description', self.request)
+                obj_setattr(client, 'auth_type', self.request)
+                obj_setattr(client.custom_auth, 'source', self.request)
+
+                for para in client.custom_auth.paras:
+                    changed = para_setattr(para, 'name', request)
+                    changed = para_setattr(para, 'val_type', request) or changed
+                    changed = para_setattr(para, 'default', request) or changed
+                    changed = (para_setattr(para, 'absent_type', request) or
+                               changed)
+
                 result["success"] = 1
         except BaseException, e:
             import traceback; traceback.print_exc()
@@ -705,7 +773,7 @@ def para_setattr(para, name, request, type="TEXT"):
     if attr_name in request.params:
         val = request.params[attr_name]
         if type == 'TEXT':
-            pass
+            val = val.strip()
         elif type == 'INT':
             if val:
                 val = int(val)

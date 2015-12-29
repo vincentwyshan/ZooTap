@@ -376,7 +376,9 @@ class Client(object):
 
     def _newclient(self):
         transport = TSocket.TSocket(self.host, PORT)
-        transport.setTimeout(1000*60*2)
+        # transport.setTimeout(1000*60*2)
+        # 超时最多两秒
+        transport.setTimeout(1000*2)
         self.transport = TTransport.TBufferedTransport(transport)
 
         # Wrap in a protocol

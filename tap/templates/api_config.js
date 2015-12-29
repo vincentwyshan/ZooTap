@@ -133,6 +133,7 @@ $(document).ready(function(){
     var sourceType = $.trim($('.label-success').text());
     editor.getSession().setMode("ace/mode/"+sourceType.toLowerCase());
     editor.getSession().setUseSoftTabs(true);
+    editor.getSession().setTabSize(4);
 
     // save
     $('#btn-save-api').click(saveApi);

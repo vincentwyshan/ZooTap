@@ -25,3 +25,16 @@ class ApiError(Exception):
 
 class ApiAuthFail(ApiError):
     pass
+
+
+class UserNotAvailable(Exception):
+    pass
+
+
+class CFNSyntaxError(Exception):
+    pass
+
+
+class BracketNotEnd(CFNSyntaxError):
+    """括号没有结束"""
+    pass

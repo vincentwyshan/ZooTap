@@ -11,8 +11,6 @@ from tap.models import (
     )
 
 
-
-
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -49,6 +47,12 @@ def main(global_config, **settings):
 def add_route(config):
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/', factory='tap.security.AuthControl')
+    config.add_route('docs', '/management/docs',
+                     factory='tap.security.AuthControl')
+    config.add_route('apps', '/management/applications',
+                     factory='tap.security.AuthControl')
+    config.add_route('apps_mobilehosting', '/management/applications/apphosting',
+                     factory='tap.security.AuthControl')
     config.add_route('login', '/management/login')
     config.add_route('logout', '/management/logout')
     config.add_route('database', '/management/database',
@@ -78,11 +82,12 @@ def add_route(config):
                      factory="tap.security.AuthControl")
     config.add_route("client_detail", "/management/client/{client_id}",
                      factory="tap.security.AuthControl")
+    # config.add_route("client_accesskeys",
+    #                  "/management/client/{client_id}/access-keys",
+    #                  factory="tap.security.AuthControl")
     config.add_route("auth_home", "/management/api/{api_id}/auth",
                      factory="tap.security.AuthControl")
-    config.add_route("auth_detail",
-                     "/management/api/{api_id}/auth/{auth_id}/{client_id}",
-                     factory="tap.security.AuthControl")
+
     config.add_route("user_list", "/management/user/list",
                      factory="tap.security.AuthControl")
     config.add_route("user_edit", "/management/user/edit/{user_id}",

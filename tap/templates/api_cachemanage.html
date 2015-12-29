@@ -22,6 +22,7 @@
 
     <hr/>
 
+%if api_selected:
     <input type="hidden" name="action" value="cacheget"/>
     %for i in range(int(math.ceil(len(api_selected.paras)/2.0))):
     <div class="row" style="margin-bottom:10px">
@@ -50,6 +51,7 @@
         %endif
     </div>
     %endfor
+%endif
 </form>
 
 <hr/>

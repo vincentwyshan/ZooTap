@@ -26,6 +26,7 @@ from tap.service.common import CadaEncoder, measure
 from tap.service.common import conn_get, stmt_split
 from tap.service.common import show_tables, Paginator
 from tap.service.apisuit import Program
+from tap.service import exceptions
 from tap.management.uicontrol import (
     gen_breadcrumbs, gen_project_names,  gen_active
 )
@@ -45,6 +46,17 @@ from tap.models import (
     TapPermission,
 )
 
+# 发布时取消注释
+# @view_config(context=Exception)
+# def exception_view(context, request):
+#     if isinstance(context, exceptions.UserNotAvailable):
+#         # 用户失效，退出登录
+#         headers = forget(request)
+#         return HTTPFound(location='/', headers=headers)
+#
+#     response = Response('Internal Server Error')
+#     response.status = 500
+#     return response
 
 @forbidden_view_config()
 def forbidden(request):
@@ -71,10 +83,10 @@ def login(request):
             user = DBSession.query(TapUser).filter_by(name=user_name).first()
             if not user:
                 err_msg = u'用户不存在'
-            if user and not valid_password(user, user_pwd):
+            elif user and not valid_password(user, user_pwd):
                 err_msg = u'密码错误'
             else:
-                headers = remember(request, user.id)
+                headers = remember(request, user.id, max_age=86400)
                 return HTTPFound(location=next_url, headers=headers)
 
     return render_to_response('templates/login.html', locals(), request=request)
@@ -110,6 +122,28 @@ class Management(object):
             context.update(common_vars(self.request))
             return render_to_response('templates/home.html', context,
                                       request=self.request)
+
+    @view_config(route_name='docs', permission="view")
+    def docs(self):
+        context = common_vars(self.request)
+        context['pagename'] = u'Cada Tap - 文档'
+        return render_to_response('templates/docs.html', context,
+                                  request=self.request)
+
+    @view_config(route_name='apps', permission="view")
+    def apps(self):
+        context = common_vars(self.request)
+        context['pagename'] = u'Cada Tap - Applications'
+        return render_to_response('templates/applications.html', context,
+                                  request=self.request)
+
+    @view_config(route_name='apps_mobilehosting', permission="view")
+    def apps_hosting(self):
+        context = common_vars(self.request)
+        context['pagename'] = u'Cada Tap - Applications'
+        return render_to_response('templates/applications_mobileapp.html',
+                                  context, request=self.request)
+
 
     @view_config(route_name="user_list", permission="view")
     def user_list(self):
@@ -385,7 +419,9 @@ class Management(object):
             if selected is None and releases:
                 selected = releases[0]
             # TODO handle no releases
-            api_selected = dict2api(json.loads(selected.content))
+            api_selected = None
+            if selected:
+                api_selected = dict2api(json.loads(selected.content))
 
             context = dict(pagename=u"%s - 线上管理" % api.name, api=api,
                            active_cachemanage=True, releases=releases,
@@ -418,9 +454,11 @@ class Management(object):
             releases = releases.limit(paginator.num_per_page)
 
             release_db = {}  # release_id: [(db_name,db_id)]
+            release_content = {}
             for release in releases:
                 content = json.loads(release.content)
                 content = dict2api(content)
+                release_content[release.id] = content
                 release_db[release.id] = OrderedDict([(db.name, db.id) for db in
                                           content.dbconn])
                 load = release.user_release
@@ -431,7 +469,7 @@ class Management(object):
             context = dict(pagename=u"%s - 发布" % api.name, api=api,
                            active_release=True, current_version=current_version,
                            releases=releases, paginator=paginator,
-                           release_db=release_db)
+                           release_db=release_db, release_content=release_content)
             context.update(common_vars(self.request))
             return render_to_response("templates/api_release.html", context,
                                       request=self.request)
@@ -451,6 +489,13 @@ class Management(object):
         with transaction.manager:
             client_id = int(self.request.matchdict['client_id'])
             client = DBSession.query(TapApiClient).get(client_id)
+
+            # eagle load
+            custom_auth = client.custom_auth
+            for para in custom_auth.paras:
+                del para
+            del custom_auth
+
             auth_list = DBSession.query(TapApiAuth).filter_by(
                 client_id=client_id)
             project_apis = {}
@@ -472,6 +517,7 @@ class Management(object):
             context = dict(pagename=u"%s - 客户端" % client.name,
                            project_apis=project_apis, client=client)
             context.update(common_vars(self.request))
+            context.update(self.auth_detail())
 
             return render_to_response("templates/client_detail.html",
                                       context, request=self.request)
@@ -496,33 +542,31 @@ class Management(object):
             return render_to_response("templates/auth_home.html", context,
                                       request=self.request)
 
-    @view_config(route_name="auth_detail", permission="view")
+    # @view_config(route_name="client_accesskeys", permission="view")
     def auth_detail(self):
         page = int(self.request.params.get('page', 1))
         with transaction.manager:
-            auth_id = int(self.request.matchdict['auth_id'])
             client_id = int(self.request.matchdict['client_id'])
-            api_id = int(self.request.matchdict['api_id'])
 
             access_keys = DBSession.query(TapApiAccessKey).filter_by(
-                auth_id=auth_id, client_id=client_id
+                client_id=client_id
             )
-            auth = DBSession.query(TapApiAuth).get(auth_id)
-            api = DBSession.query(TapApi).get(api_id)
 
             total = access_keys.count()
             paginator = Paginator(page, total=total, num_per_page=15)
             access_keys = access_keys.offset((page-1)*15)
             access_keys = access_keys.limit(15)
+            client = DBSession.query(TapApiClient).get(client_id)
 
             context = dict(
-                pagename=u"%s-%s: tokens" % (api.name, auth.auth_client.name),
-                access_keys=access_keys, api=api, auth=auth,
+                pagename=u"%s: Accesskeys" % (client.name,),
+                access_keys=access_keys,
                 paginator=paginator, datetime=datetime, active_auth=True
             )
-            context.update(common_vars(self.request))
-            return render_to_response("templates/auth_accesskeys.html",
-                                      context, request=self.request)
+            # context.update(common_vars(self.request))
+            # return render_to_response("templates/client_accesskeys.html",
+            #                           context, request=self.request)
+            return context
 
     @view_config(route_name="api_test", permission="view")
     def api_test(self):
@@ -530,7 +574,9 @@ class Management(object):
 
         api_id = params['id']
         api = DBSession.query(TapApi).get(int(api_id))
-        if 'name' in params:
+        from_cfgpage = False # 从api_config 页面提交
+        if 'dbconn_secondary' in params and 'source_type' in params:
+            from_cfgpage = True
             dbconn_idlist = params['dbconn']
             dbconn = []
             for _id in dbconn_idlist.split(','):
@@ -538,6 +584,15 @@ class Management(object):
                     continue
                 conn = DBSession.query(TapDBConn).get(_id)
                 dbconn.append(dict(
+                    id=conn.id, name=conn.name, dbtype=conn.dbtype,
+                    connstring=conn.connstring, options=conn.options
+                ))
+            dbconn_secondary = []
+            for _id in params['dbconn_secondary'].split(','):
+                if not _id:
+                    continue
+                conn = DBSession.query(TapDBConn).get(_id)
+                dbconn_secondary.append(dict(
                     id=conn.id, name=conn.name, dbtype=conn.dbtype,
                     connstring=conn.connstring, options=conn.options
                 ))
@@ -551,6 +606,7 @@ class Management(object):
                 ),
                 dbconn=dbconn,
                 dbconn_ratio=params.get('dbconn_ratio'),
+                dbconn_secondary=dbconn_secondary,
                 source=dict(
                     id=-1, source=params['source'],
                     source_type=params['source_type']
@@ -582,7 +638,7 @@ class Management(object):
 
         paras = {}
         for para in config.paras:
-            if para.name in params:
+            if para.name in params and from_cfgpage == False:
                 paras[para.name] = params[para.name]
             else:
                 paras[para.name] = para.default
