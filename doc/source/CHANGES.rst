@@ -1,14 +1,10 @@
 版本记录
 ========
 
-0.0
----
-
--  Initial version
-
 
 0.3.0
 -----
+
 - 增加 cfn_export, cfn_bind, cfn_case 三个控制流函数
     + cfn_export(@variable, @variable1...)
     + cfn_bind(bind_name)
@@ -23,3 +19,10 @@
 - 提升 python 模式下 API 编译的性能, 解决字符集设定不能很好处理的问题
 - 代码字符集统一为 utf8
 - 增加 Excel 文件上传功能
+
+
+0.0
+---
+
+-  Initial version
+

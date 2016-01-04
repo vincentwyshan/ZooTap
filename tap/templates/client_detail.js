@@ -97,12 +97,12 @@ function authChange(){
         $('#custom-settings').show();
         $('#new-para').show();
         $('#refresh-token').hide();
-        $('#token-block').hide();
+        // $('#token-block').hide();
     }
     else{
         $('#custom-settings').hide();
         $('#new-para').hide();
         $('#refresh-token').show();
-        $('#token-block').show();
+        // $('#token-block').show();
     }
 }
