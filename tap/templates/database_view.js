@@ -7,6 +7,9 @@ function executeSQL(){
         source = selectedSource;
     }
 
+    // select tab
+    $('.tabbable a[href=#home3]').tab('show');
+
     $('#btn-run-sql').attr('disabled', true);
     $('#home3').empty();
     $('#home3').append('<center style="margin:50px 0"><i class="ace-icon fa fa-spinner fa-spin orange bigger-300"></i></center>');
