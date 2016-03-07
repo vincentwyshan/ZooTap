@@ -35,7 +35,7 @@ if sys.version_info < (2, 7):
     requires.append('ordereddict')
 
 setup(name='tap',
-      version='0.3.0',
+      version='0.3.1',
       description='tap',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
