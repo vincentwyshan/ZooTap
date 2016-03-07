@@ -25,16 +25,17 @@ from tap.models import (
     Base, DBSession, Task, TapDBConn
 )
 
-config_uri = sys.argv[1]
-if config_uri == '-A':
-    config_uri = os.environ['CONFIG_URI']
-    # print 'os.environ:', config_uri
-else:
-    config_uri = os.path.abspath(config_uri)
-    os.environ['CONFIG_URI'] = config_uri
 
 # setup_logging(config_uri)
 if 'celery' in repr(sys.argv):
+    config_uri = sys.argv[1]
+    if config_uri == '-A':
+        config_uri = os.environ['CONFIG_URI']
+        # print 'os.environ:', config_uri
+    else:
+        config_uri = os.path.abspath(config_uri)
+        os.environ['CONFIG_URI'] = config_uri
+
     settings = get_appsettings(config_uri)
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
