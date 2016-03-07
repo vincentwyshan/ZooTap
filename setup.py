@@ -29,7 +29,7 @@ requires = [
     'pyramid_dogpile_cache',
     'thrift',
     'xlrd',
-    'celery',
+    'celery==3.1.20',
     ]
 if sys.version_info < (2, 7):
     requires.append('ordereddict')
