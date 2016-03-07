@@ -1,0 +1,113 @@
+<%inherit file="base_notopbar.html" />
+
+<%block name="pagecontent">
+<form action="upload-file" method="post" accept-charset="utf-8"
+      enctype="multipart/form-data">
+<div class="form-group"> 
+    <input type="hidden" name="dbconn_id" value="${dbconn_id}"/>
+    <div class="col-xs-12" id=""> 
+        <label class="ace-file-input">
+            <input type="file" id="input-excel" name="excel"/>
+        </label>
+    </div> 
+    <div class="col-xs-12">
+        <div id="upload-message" class="alert alert-success alert-block" style="margin-bottom: 5px; display: none;">
+            
+        </div>
+    </div>
+    <div class="col-xs-3"></div>
+    <div class="col-xs-6" style="text-align: right;">
+        <a class="btn btn-primary no-border btn-xs btn-block" id="btn-upload">上传</a>
+        <a class="btn btn-primary no-border btn-xs btn-block" href="/static/TEMPLATE.xlsx" target="_blank" style="margin-top:10px;">下载模板文件</a>
+    </div>
+</div>
+</form>
+</%block>
+
+
+<%block name="jsblock">
+<script>
+var uploadProgress = function(taskId){
+    $.get('upload-progress', {task_id: taskId}, function(response){
+        if(response.status == 'READY' || response.status == 'RUNNING'){
+            $('#upload-message').html('<i class="fa fa-spinner fa-spin"></i>&nbsp;&nbsp;' + response.message);
+            setTimeout(function(){uploadProgress(taskId);}, 500);
+        }
+        else if(response.status == 'DONE'){
+            $('#upload-message').html(response.message);
+            $('#input-excel').removeAttr('disabled');
+        }
+        else if(response.status == 'FAIL'){
+            $('#upload-message').removeClass('alert-success');
+            $('#upload-message').addClass('alert-danger');
+            $('#upload-message').html( '<i class="fa fa-warning"></i>&nbsp;&nbsp;'+ response.message);
+            $('#input-excel').removeAttr('disabled');
+        }
+    });
+}
+var uploadExcel = function(){
+    // 确认文件对象
+    if($('#input-excel')[0].files.length != 1){
+        alert("请先选择上传文件!")
+        return 
+    }
+    var data = new FormData($('form')[0]);
+
+    // 禁用上传
+    $('#input-excel').attr('disabled', 'true');
+    // 显示提示信息框
+    $('#upload-message').removeClass('alert-danger');
+    $('#upload-message').addClass('alert-success');
+    $('#upload-message').show();
+
+    $('#btn-upload').attr('disabled', 'true');
+
+    $.ajax({
+        url:'upload-file',
+        data: data,
+        cache:false,
+        contentType:false,
+        processData:false,
+        type:'POST',
+        success:function(response){
+            if(response.status == 200){
+                uploadProgress(response.id);
+            }
+            else{
+                $('#upload-message').removeClass('alert-success');
+                $('#upload-message').addClass('alert-danger');
+                $('#upload-message').html( '<i class="fa fa-warning"></i>&nbsp;&nbsp;'+ response.message);
+                $('#input-excel').removeAttr('disabled');
+            }
+        }
+    });
+
+}
+$(document).ready(function(){
+    $('#input-excel').ace_file_input({
+        no_file:'No File ...',
+        btn_choose:'打开文件',
+        btn_change:'打开文件',
+        droppable:false,
+        onchange:null,
+        thumbnail:false, //| true | large
+        allowExt:['xls', 'xlsx']
+        //blacklist:'exe|php'
+        //onchange:''
+        //
+    })
+    .on('change', function() {
+        //TODO handling add/remove
+        var files = $(this).data('ace_input_files');
+        var method = $(this).data('ace_input_method');
+        $('#upload-message').hide();
+        if (files.length == 1){
+           $('#btn-upload').removeAttr('disabled');
+        }
+    });;
+
+    $('#btn-upload').click(uploadExcel);
+});
+
+</script>
+</%block>

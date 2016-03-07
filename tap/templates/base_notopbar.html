@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta charset="utf-8" />
+    <title>${pagename} - Cada Tap</title>
+    <meta name="description" content="Capitalvue Cada Tap Interface Management" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <!-- bootstrap & fontawesome -->
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css" />
+    <%block name="meta_head1" />
+
+    <link rel="stylesheet" href="/static/css/chosen.css"/>
+
+    <!-- page specific plugin styles -->
+
+    <!-- text fonts -->
+    <link rel="stylesheet" href="/static/css/ace-fonts.css"/>
+
+    <!-- ace styles -->
+    <link rel="stylesheet" href="/static/css/ace.min.css" id="main-ace-style"/>
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-part2.min.css"/>
+    <![endif]-->
+    <link rel="stylesheet" href="/static/css/ace-skins.min.css"/>
+    <link rel="stylesheet" href="/static/css/ace-rtl.min.css"/>
+
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-ie.min.css"/>
+    <![endif]-->
+
+    <link rel="stylesheet" href="/static/jjsonviewer/jjsonviewer.css"/>
+
+    <!-- ace settings handler -->
+    <script src="/static/js/ace-extra.min.js"></script>
+
+    <!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+
+    <!--[if lte IE 8]>
+    <script src="/static/js/html5shiv.min.js"></script>
+    <script src="/static/js/respond.min.js"></script>
+    <![endif]-->
+
+    <%block name="meta_head" />
+
+    <style type="text/css">
+       <%include file="base.css"/>
+    </style>
+</head>
+
+<body class="no-skin">
+
+<!-- /section:basics/navbar.layout -->
+<div class="main-container " id="main-container">
+    <script type="text/javascript">
+                try{ace.settings.check('main-container' , 'fixed')}catch(e){}
+
+
+    </script>
+
+    <!-- /section:basics/sidebar -->
+    <div class="main-content">
+
+    <div class="page-content">
+        <%block name="pagecontent">
+        </%block>
+</div>
+<!-- /.page-content -->
+</div>
+<!-- /.main-content -->
+
+<a href="#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+    <i class="ace-icon fa fa-angle-double-up icon-only bigger-110"></i>
+</a>
+</div><!-- /.main-container -->
+
+<!-- basic scripts -->
+
+<!--[if !IE]> -->
+<script type="text/javascript">
+            window.jQuery || document.write("<script src='/static/js/jquery.min.js'>"+"<"+"/script>");
+
+
+</script>
+
+<!-- <![endif]-->
+
+<!--[if IE]>
+<script type="text/javascript">
+ window.jQuery || document.write("<script src='/static/js/jquery1x.min.js'>"+"<"+"/script>");
+
+
+</script>
+<![endif]-->
+<script type="text/javascript">
+            if('ontouchstart' in document.documentElement) document.write("<script src='/static/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+
+
+</script>
+<script src="/static/js/bootstrap.min.js"></script>
+
+<!-- page specific plugin scripts -->
+
+<!--[if lte IE 8]>
+<script src="/static/js/excanvas.min.js"></script>
+<![endif]-->
+<script src="/static/js/jquery-ui.custom.min.js"></script>
+<script src="/static/js/jquery.ui.touch-punch.min.js"></script>
+<script src="/static/js/jquery.easypiechart.min.js"></script>
+<script src="/static/js/jquery.sparkline.min.js"></script>
+
+<!-- ace scripts -->
+<script src="/static/js/ace-elements.min.js"></script>
+<script src="/static/js/ace.min.js"></script>
+
+<!-- the following scripts are used in demo only for onpage help and you don't need them -->
+<link rel="stylesheet" href="/static/css/ace.onpage-help.css"/>
+
+<script type="text/javascript"> ace.vars['base'] = '..'; </script>
+<script src="/static/js/ace/elements.onpage-help.js"></script>
+<script src="/static/js/ace/ace.onpage-help.js"></script>
+<script src="/static/js/chosen.jquery.min.js"></script>
+<script src="/static/js/typeahead.jquery.min.js"></script>
+
+<script src="/static/js/jquery.dataTables.min.js"></script>
+<script src="/static/js/jquery.dataTables.bootstrap.js"></script>
+
+<script src="/static/jjsonviewer/jjsonviewer.js"></script>
+
+<script>
+$(document).ready(function(){
+    $('.chosen-select').chosen({allow_single_deselect:true});
+    $('[data-toggle="popover"]').popover({html:true, container:'body'});
+    $('[data-toggle="tooltip"]').tooltip({container:'body'});
+    $(window) .off('resize.chosen')
+                .on('resize.chosen', function() {
+                    $('.chosen-select').each(function() {
+                         var $this = $(this);
+                         var _class = $(this).attr('class');
+                         var reg = /\scol[^\s]+\d+/;
+                         if(reg.exec(_class) != null){
+                            $this.next().addClass(reg.exec(_class)[0]);
+                         }
+                         //$this.next().css({'width': $this.parent().width()});
+                         $this.next().removeAttr('style');
+                         $this.next().css({'padding-left': 0});
+                         $this.next().css({'padding-right': 0});
+                    })
+                }).trigger('resize.chosen');
+    $('.chosen-choices .search-field input').css('width', '100px');
+ })
+
+</script>
+<%block name="jsblock">
+</%block>
+<%block name="modal">
+</%block>
+</body>
+</html>
