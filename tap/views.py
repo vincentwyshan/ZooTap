@@ -4,6 +4,9 @@ import time
 import datetime
 import urllib
 import math
+import socket
+import tempfile
+import shutil
 try:
     from collections import OrderedDict
 except ImportError:
@@ -18,6 +21,7 @@ from pyramid.httpexceptions import HTTPFound, HTTPNotFound
 import simplejson as json
 
 import transaction
+import xlrd
 from sqlalchemy import func, or_
 
 from tap.security import valid_password
@@ -44,6 +48,7 @@ from tap.models import (
     TapApiErrors,
     TapUserPermission,
     TapPermission,
+    Task,
 )
 
 # 发布时取消注释
@@ -835,3 +840,62 @@ class ChartsGen(object):
                        height=height)
         return render_to_response(template, context,
                                   request=self.request)
+
+
+class WidgetExcel(object):
+    def __init__(self, request):
+        self.request = request
+
+    @view_config(route_name="upload_excel")
+    def upload_view(self):
+        template = "templates/database_xlsupload.html"
+        dbconn_id = self.request.params['dbconn_id']
+
+        context = common_vars(self.request)
+        context.update(dict(
+            pagename="Excel Upload", dbconn_id=dbconn_id
+        ))
+        return render_to_response(template, context, request=self.request)
+
+    @view_config(route_name="upload_rcv")
+    def upload_rcv(self):
+        """
+        上传数据表内容
+        :param
+        :return:
+        """
+        dbconn_id = self.request.params['dbconn_id']
+
+        file_name = self.request.POST['excel'].filename
+        excel_file = self.request.POST['excel'].file
+        from tap.scripts.tasks import upload_excel
+
+        # save task
+        with transaction.manager:
+            task = Task(
+                task_type='EXCEL', task_name=file_name,
+                attachment=excel_file.read(),
+                message="excel file uploaded.",
+                parameters=json.dumps(dict(dbconn_id=dbconn_id))
+            )
+            DBSession.add(task)
+            DBSession.flush()
+            result = dict(id=task.id, status=200, message="")
+            try:
+                upload_excel.delay(task.id)
+            except socket.error:
+                result['status'] = 500
+                result['message'] = 'backend worker not start.'
+            response = Response(json.dumps(result))
+            response.content_type = "application/json"
+            return response
+
+    @view_config(route_name="upload_progress")
+    def upload_progress(self):
+        task_id = self.request.params['task_id']
+        with transaction.manager:
+            task = DBSession.query(Task).get(task_id)
+            result = dict(id=task.id, status=task.status, message=task.message)
+            response = Response(json.dumps(result))
+            response.content_type = "application/json"
+            return response

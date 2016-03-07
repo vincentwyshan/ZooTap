@@ -74,6 +74,14 @@ function recoverSource(){
     }
 }
 
+function toolExcelUpload(){
+    $('#myModal .modal-body').html('\
+        <iframe src="/management/tools/upload-excel?dbconn_id=${dbconn.id}" \
+        style="width:100%;min-height:300px;border:0;" /> \
+    ');
+    $('#myModal .modal-title').text('上传数据 - ${dbconn.name}');
+}
+
 $(document).ready(function(){
     recoverSource();
 
@@ -88,5 +96,7 @@ $(document).ready(function(){
 
     $('#btn-run-sql').click(executeSQL);
     initTableInfo();
+
+    $('#btn-upload-excel').click(toolExcelUpload);
 });
 

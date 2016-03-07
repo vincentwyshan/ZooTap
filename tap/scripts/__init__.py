@@ -21,6 +21,7 @@ def init_session_from_cmd():
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
+    return options
 
 
 def init_all():

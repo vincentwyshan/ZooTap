@@ -38,10 +38,21 @@
                         <small class="pink">信息</small>
                     </a>
                 </li>
+
+                <li>
+                    <a data-toggle="tab" href="#tools">
+                        <i class="blue ace-icon fa fa-th-large bigger-110"></i>
+                        <small class="blue">工具</small>
+                    </a>
+  
+                </li>
             </ul>
 
             <div class="tab-content">
                 <div id="home3" class="tab-pane in active" style="min-height:300px;">
+                    <center style="padding-top: 100px; color: #777; opacity: 0.39; font-size: 30px;">
+                        运行SQL，查询数据！
+                    </center>
                 </div>
 
                 <div id="profile3" class="tab-pane" style="min-height:300px">
@@ -65,6 +76,18 @@
                     </table>
                 </div>
 
+                <div id="tools" class="tab-pane" style="min-height: 300px">
+                    <div class="col-xs-6">
+                        <a id="btn-upload-excel" class="btn btn-primary btn-white btn-block" data-target="#myModal" data-toggle="modal" data-keyboard="false" data-backdrop="static" >
+                            <i class="fa fa-cloud-upload"></i>
+                            上传数据
+                        </a>
+                    </div>
+                    <div class="col-xs-6">
+                        
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -76,5 +99,21 @@
 <script>
     <%include file="database_view.js"/>
 </script>
+</%block>
+
+<%block name="modal">
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel"></h4>
+            </div>
+            <div class="modal-body">
+            </div>
+        </div>
+    </div>
+</div>
 </%block>
 

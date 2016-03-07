@@ -28,6 +28,8 @@ requires = [
     'python-memcached',
     'pyramid_dogpile_cache',
     'thrift',
+    'xlrd',
+    'celery',
     ]
 if sys.version_info < (2, 7):
     requires.append('ordereddict')
@@ -55,6 +57,7 @@ setup(name='tap',
       [paste.app_factory]
       main = tap:main
       [console_scripts]
+      tap_worker = tap.scripts.worker:start
       tap_initdb = tap.scripts.initializedb:main
       tap_dbconnupdate = tap.scripts.dbtools:check_dbconn
       tap_stats = tap.service.rpcstats:main

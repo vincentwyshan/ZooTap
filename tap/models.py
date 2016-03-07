@@ -342,6 +342,7 @@ Index('tap_apistats_projectid', TapApiStats.project_id, TapApiStats.client_id, T
 Index('tap_apistats_apiclientid', TapApiStats.api_id, TapApiStats.client_id, TapApiStats.occurrence_time, unique=True)
 Index('tap_apistats_clientid', TapApiStats.client_id, TapApiStats.occurrence_time)
 
+
 class TapApiErrors(Base):
     __tablename__ = 'tap_apierrors'
     id = Column(Integer, Sequence('seq_taperrors_id'), primary_key=True)
@@ -363,3 +364,19 @@ Index('tap_apierrors_projectid', TapApiErrors.project_id, TapApiErrors.client_id
 Index('tap_apierrors_apiclientid', TapApiErrors.api_id, TapApiErrors.client_id, TapApiErrors.occurrence_time)
 Index('tap_apierrors_clientid', TapApiErrors.client_id, TapApiErrors.occurrence_time)
 Index('tap_apierrors_uniqueid', TapApiErrors.api_id, TapApiErrors.client_id, TapApiErrors.hash_id, unique=True)
+
+
+class Task(Base):
+    __tablename__ = 'tap_task'
+    id = Column(Integer, Sequence('seq_taptasks_id'), primary_key=True)
+    task_type = Column(Unicode(30), nullable=False)  # EXCEL,
+    task_name = Column(Unicode(30), nullable=False)
+    status = Column(Enum('READY', 'RUNNING', 'DONE', 'FAIL', name="status",
+                         convert_unicode=True),
+                    nullable=False, default='READY')
+    parameters = Column(UnicodeText)  # json string of dict
+    message = Column(UnicodeText)
+    attachment = Column(LargeBinary)  # 附加数据
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+

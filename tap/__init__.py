@@ -10,10 +10,13 @@ from tap.models import (
     Base,
     )
 
-
+globalsettings = None
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+    global globalsettings
+    globalsettings = settings
+
     engine = engine_from_config(settings, 'sqlalchemy.', pool_recycle=1800)
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
@@ -94,6 +97,10 @@ def add_route(config):
                      factory="tap.security.AuthControl")
     config.add_route("charts", "/management/charts")
 
+    # 上传Excel
+    config.add_route("upload_excel", "/management/tools/upload-excel")
+    config.add_route("upload_rcv", "/management/tools/upload-file")
+    config.add_route("upload_progress", "/management/tools/upload-progress")
 
 
 def add_srv_route(config):
