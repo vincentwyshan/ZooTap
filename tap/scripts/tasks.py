@@ -4,6 +4,9 @@ __author__ = 'Vincent@Home'
 
 import os
 import sys
+import subprocess
+import time
+import signal
 import tempfile
 import collections
 import datetime
@@ -27,7 +30,10 @@ from tap.models import (
 
 
 # setup_logging(config_uri)
-if 'celery' in repr(sys.argv):
+from tap import globalsettings
+settings = globalsettings
+
+if settings is None:  # 'celery' in repr(sys.argv):
     config_uri = sys.argv[1]
     if config_uri == '-A':
         config_uri = os.environ['CONFIG_URI']
@@ -40,16 +46,28 @@ if 'celery' in repr(sys.argv):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
-else:
-    from tap import globalsettings
-    settings = globalsettings
 
 
 app = Celery('tap.scripts.tasks', broker='sqla+' + settings['sqlalchemy.url'])
 
 
 def start_celeryworker():
-    os.system('celery -A tap.scripts.tasks worker --loglevel=info')
+    process = subprocess.Popen(
+        'celery -A tap.scripts.tasks worker --loglevel=info',
+        shell=True
+    )
+
+    def handle_sig(signum, frame):
+        process.send_signal(signal.SIGTERM)
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, handle_sig)
+    signal.signal(signal.SIGINT, handle_sig)
+    signal.signal(signal.SIGABRT, handle_sig)
+    signal.signal(signal.SIGQUIT, handle_sig)
+    signal.signal(signal.SIGHUP, handle_sig)
+
+    while True:
+        time.sleep(1)
 
 
 @app.task
