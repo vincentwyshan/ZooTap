@@ -78,10 +78,12 @@ class ExcelHandler(object):
     @classmethod
     def upload(cls, task_id):
         ExcelHandler.upload_status(task_id, u'RUNNING', u'upload start')
-        task = DBSession.query(Task).get(task_id)
-        file_path = tempfile.mkstemp(prefix='tap')[1]
-        with open(file_path, 'wb') as save_file:
-            save_file.write(task.attachment)
+        with transaction.manager:
+            task = DBSession.query(Task).get(task_id)
+            dbconn_id = json.loads(task.parameters)['dbconn_id']
+            file_path = tempfile.mkstemp(prefix='tap')[1]
+            with open(file_path, 'wb') as save_file:
+                save_file.write(task.attachment)
 
         # open workbook
         workbook = xlrd.open_workbook(file_path)
@@ -146,7 +148,7 @@ class ExcelHandler(object):
                 report += u"[%s-%s]: insert %s, update %s, delete %s\n" % \
                           (config.TABLE_NAME, sheet_name, 0, 0, 0)
                 continue
-            cnt_i, cnt_u, cnt_d = cls.import_data(task, config, unique_keys,
+            cnt_i, cnt_u, cnt_d = cls.import_data(dbconn_id, config, unique_keys,
                                                   upsert, delete)
             report += u"[%s-%s]: insert %s, update %s, delete %s\n" % \
                       (config.TABLE_NAME, sheet_name, cnt_i, cnt_u, cnt_d)
@@ -250,7 +252,7 @@ class ExcelHandler(object):
         return result
 
     @classmethod
-    def import_data(cls, task, config, unique_keys, upsert, delete):
+    def import_data(cls, dbconn_id, config, unique_keys, upsert, delete):
         """
 
         :param task:
@@ -260,15 +262,15 @@ class ExcelHandler(object):
         :param delete:
         :return: count of (insert, update, delete)
         """
-        dbconn_id = json.loads(task.parameters)['dbconn_id']
-        dbconn = DBSession.query(TapDBConn).get(dbconn_id)
-        conn = conn_get(dbconn.dbtype, dbconn.connstring, dbconn.options)
-        cursor = conn.cursor()
+        with transaction.manager:
+            dbconn = DBSession.query(TapDBConn).get(dbconn_id)
+            conn = conn_get(dbconn.dbtype, dbconn.connstring, dbconn.options)
+            cursor = conn.cursor()
 
-        if dbconn.dbtype == 'MYSQL':
-            return cls.import_data_mysql(
-                config, cursor, unique_keys, upsert, delete
-            )
+            if dbconn.dbtype == 'MYSQL':
+                return cls.import_data_mysql(
+                    config, cursor, unique_keys, upsert, delete
+                )
 
     @classmethod
     def import_data_mysql(cls, config, cursor, unique_keys, upsert, delete):
