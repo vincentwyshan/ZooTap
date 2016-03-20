@@ -1,7 +1,9 @@
 TAP API MANAGEMENT TOOL
 =======================
 
-A simple tool based on web, to manage simple SQL WEB API.
+A simple tool based on web, to manage simple WEB API.
+
+TODO: integrate a distribute cron job tool, config/monitor/log/distribute.
 
 
 Getting Started
