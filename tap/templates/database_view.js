@@ -91,6 +91,15 @@ $(document).ready(function(){
     editor.getSession().setUseSoftTabs(true);
     editor.getSession().setTabSize(4);
 
+    // ctrl[command] + enter = hot key for run sql
+    editor.commands.addCommand({
+        name: 'runsql',
+        bindKey: {win: "Ctrl-Enter", mac: "Command-Enter"},
+        exec: function(editor){
+            executeSQL();
+        }
+    })
+
     // 定期保存代码
     setInterval(saveSource, 2000);
 
