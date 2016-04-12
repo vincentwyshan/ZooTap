@@ -68,7 +68,8 @@ function newPara(){
 
 function delPara(){
     var paraId = $(this).attr('paraid');
-    var data = {id: paraId, action: 'paradelete'}
+    var apiId = $('[apiid]').attr('apiid');
+    var data = {id: paraId, action: 'paradelete', api_id: apiId}
 
     function callback(response){
         if(response.success == 1){

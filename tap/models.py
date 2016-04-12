@@ -278,10 +278,10 @@ class TapApiClientCustomPara(Base):
     customauth_id = Column(Integer, ForeignKey('tap_apiclientcauth.id'))
     customauth = relationship('TapApiClientCustomAuth', backref='paras')
     name = Column(Unicode(30), nullable=False)
-    val_type = Column(Enum('TEXT', 'INT', 'DECIMAL', 'DATE', name="val_type",
+    val_type = Column(Enum('TEXT', 'INT', 'DECIMAL', 'DATE', name="val_type1",
                            convert_unicode=True), default=u'TEXT')
     default = Column(UnicodeText, default=u"")
-    absent_type = Column(Enum('NECESSARY', 'OPTIONAL', name="absent_type",
+    absent_type = Column(Enum('NECESSARY', 'OPTIONAL', name="absent_type1",
                               convert_unicode=True), default=u"NECESSARY")
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
