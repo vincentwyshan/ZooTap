@@ -37,3 +37,4 @@ nosetests.xml
 
 doc/build
 tap/static/doc/
+.idea
