@@ -278,10 +278,10 @@ class TapApiClientCustomPara(Base):
     customauth_id = Column(Integer, ForeignKey('tap_apiclientcauth.id'))
     customauth = relationship('TapApiClientCustomAuth', backref='paras')
     name = Column(Unicode(30), nullable=False)
-    val_type = Column(Enum('TEXT', 'INT', 'DECIMAL', 'DATE', name="val_type",
+    val_type = Column(Enum('TEXT', 'INT', 'DECIMAL', 'DATE', name="val_type1",
                            convert_unicode=True), default=u'TEXT')
     default = Column(UnicodeText, default=u"")
-    absent_type = Column(Enum('NECESSARY', 'OPTIONAL', name="absent_type",
+    absent_type = Column(Enum('NECESSARY', 'OPTIONAL', name="absent_type1",
                               convert_unicode=True), default=u"NECESSARY")
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
@@ -380,3 +380,11 @@ class Task(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 
+
+class CaptchaCode(Base):
+    __tablename__ = 'tap_captchacode'
+    id = Column(Integer, Sequence('seq_tapvcode_id'), primary_key=True)
+    code = Column(Unicode(10), nullable=False)
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+Index('tap_captcha_created', CaptchaCode.created)

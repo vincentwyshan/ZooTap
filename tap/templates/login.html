@@ -67,6 +67,7 @@
 
 											<form action="" method="POST">
                                                 <input name="form.submitted" type="hidden" />
+                                                <input name="captcha_id" type="hidden" value="${captcha_id}"/>
 												<fieldset>
 													<label class="block clearfix">
 														<span class="block input-icon input-icon-right">
@@ -81,6 +82,15 @@
 															<i class="ace-icon fa fa-lock"></i>
 														</span>
 													</label>
+
+                                                    <label class="block clearfix">
+														<span class="block input-icon input-icon-right">
+															<input type="text" class="form-control" placeholder="" name="captcha_code" style="width: calc(100% - 100px);" />
+                                                            <image id="captcha" data-toggle="tooltip" title="点击刷新" src="/captcha/image?id=${captcha_id}"
+                                                                    style="position: absolute; right: 0px; display: inline-block; top: 1px; height: 33px; cursor:pointer;"/>
+														</span>
+													</label>
+
 
 													<div class="space"></div>
 
@@ -117,21 +127,22 @@
 
 		<!-- basic scripts -->
 
-		<!--[if !IE]> -->
-		<script type="text/javascript">
+<!--[if !IE]> -->
+<script type="text/javascript">
 			window.jQuery || document.write("<script src='/static/js/jquery.min.js'>"+"<"+"/script>");
-		</script>
+</script>
 
-		<!-- <![endif]-->
+<!-- <![endif]-->
 
-		<!--[if IE]>
+<!--[if IE]>
 <script type="text/javascript">
  window.jQuery || document.write("<script src='/static/js/jquery1x.min.js'>"+"<"+"/script>");
 </script>
 <![endif]-->
-		<script type="text/javascript">
+<script type="text/javascript">
 			if('ontouchstart' in document.documentElement) document.write("<script src='/static/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
-		</script>
+</script>
+<script src="/static/js/bootstrap.min.js"></script>
 
 		<!-- inline scripts related to this page -->
 		<script type="text/javascript">
@@ -171,6 +182,16 @@
 			 });
 			 
 			});
+	        $('[data-toggle="tooltip"]').tooltip({container:'body'});
+
+	        $('#captcha').click(function(){
+	            var callback = function(response){
+	                var id=response.result;
+	                $('input[name=captcha_id]').val(id);
+	                $('#captcha').attr('src', '/captcha/image?id='+id);
+	            }
+	            $.getJSON('/captcha/request', callback);
+	        })
 		</script>
 	</body>
 </html>
