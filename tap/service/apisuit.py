@@ -240,6 +240,18 @@ class Program(object):
             return True
         return False
 
+    def _source_prepare_repl(self, source, paras):
+        """
+        handling replace variable binding, @@name
+        :param source:
+        :param paras:
+        :return:
+        """
+        for name, value in paras.items():
+            reg_name = ur'([^\w])@@%s\b' % name
+            source = re.sub(reg_name, u' %s ' % unicode(value), source)
+        return source
+
     def _source_prepare(self, source, paras, dbtype):
         """
         处理代码中: 值绑定，参数绑定
@@ -342,7 +354,7 @@ class Program(object):
             result['sys_timestamp_current'] = time.time()
 
         # 测试 dbconn choice 用
-        result['sys_dbchoose'] = self._dbchoose
+        # result['sys_dbchoose'] = self._dbchoose
         return result
 
     def run_python(self, paras):
@@ -422,6 +434,7 @@ class Program(object):
             #     stmts = [source.strip()]
             # else:
             #     stmts = stmt_split(source)
+            # source = self._source_prepare_repl(source, paras)
             stmts = stmt_split(source)
 
             _last_cursor = None
@@ -476,7 +489,10 @@ class Program(object):
         # 处理百分号问题
         if dbtype in ('MYSQL', 'PGSQL'):
             stmt = code_info.script.replace(u'%', u'%%')
+        else:
+            stmt = code_info.script
 
+        stmt = self._source_prepare_repl(stmt, paras)
         stmt, para = self._source_prepare(stmt, paras, dbtype)
 
         if charset:
@@ -492,6 +508,7 @@ class Program(object):
 
         # bind result
         if code_info.bind:
+            assert code_info.bind != 'table', "Don't bind data to `table`"
             data = self.bind_result(cursor, code_info.bind, dbtype, elapse)
             result[code_info.bind] = data
 

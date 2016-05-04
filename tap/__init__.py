@@ -107,6 +107,9 @@ def add_srv_route(config):
     config.add_route('authorize', '/api/authorize')
     config.add_route('api_run', '/api/{project_name}/{api_name}')
     config.add_route('api_run_v', '/api/{project_name}/{api_name}/v{version}')
+    config.add_route('captcha_request', '/captcha/request')
+    config.add_route('captcha_image', '/captcha/image')
+    config.add_route('captcha_validate', '/captcha/validate')
 
 
 def main_service(global_config, **settings):

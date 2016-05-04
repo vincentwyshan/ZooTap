@@ -30,12 +30,13 @@ requires = [
     'thrift',
     'xlrd',
     'celery==3.1.20',
+    'captcha',
     ]
 if sys.version_info < (2, 7):
     requires.append('ordereddict')
 
 setup(name='tap',
-      version='0.3.3',
+      version='0.3.4',
       description='tap',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[

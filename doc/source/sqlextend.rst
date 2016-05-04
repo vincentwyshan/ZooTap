@@ -3,6 +3,8 @@ SQL扩展说明
 ===========
 
 
+.. contents::
+
 
 SQL方言
 ========
@@ -28,6 +30,25 @@ Postgresql 通过 limit、offset 实现分页。
 =========
 不同的数据库或者数据库驱动，有不同的变量绑定标志，比如 mysql 是 ``@variable``，Oracle
 是 ``:variable`` 。在Cada Tap 的SQL编辑模式中统一使用 ``@variable`` 进行变量绑定。
+
+@name
+------
+变量绑定, 使用 mysql/oracle/pgsql/sqlserver 的变量绑定方式传递参数
+
+
+
+.. highlight:: mysql
+
+@@name
+------
+变量替换, 使用字符替换的方式使用传入参数。例如
+
+    ::
+
+        select * from tablea limit @@num -- @@num=10
+        -- 等效于
+        select * from tablea limit 10
+
 
 扩展函数
 =========

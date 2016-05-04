@@ -380,3 +380,11 @@ class Task(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
 
+
+class CaptchaCode(Base):
+    __tablename__ = 'tap_captchacode'
+    id = Column(Integer, Sequence('seq_tapvcode_id'), primary_key=True)
+    code = Column(Unicode(10), nullable=False)
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
+Index('tap_captcha_created', CaptchaCode.created)

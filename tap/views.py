@@ -31,6 +31,7 @@ from tap.service.common import conn_get, stmt_split
 from tap.service.common import show_tables, Paginator
 from tap.service.apisuit import Program
 from tap.service import exceptions
+from tap.service.tcaptcha import gen_captcha, validate
 from tap.management.uicontrol import (
     gen_breadcrumbs, gen_project_names,  gen_active
 )
@@ -49,19 +50,20 @@ from tap.models import (
     TapUserPermission,
     TapPermission,
     Task,
+    CaptchaCode,
 )
 
 # 发布时取消注释
-# @view_config(context=Exception)
-# def exception_view(context, request):
-#     if isinstance(context, exceptions.UserNotAvailable):
-#         # 用户失效，退出登录
-#         headers = forget(request)
-#         return HTTPFound(location='/', headers=headers)
-#
-#     response = Response('Internal Server Error')
-#     response.status = 500
-#     return response
+@view_config(context=Exception)
+def exception_view(context, request):
+    if isinstance(context, exceptions.UserNotAvailable):
+        # 用户失效，退出登录
+        headers = forget(request)
+        return HTTPFound(location='/', headers=headers)
+
+    response = Response('Internal Server Error')
+    response.status = 500
+    return response
 
 @forbidden_view_config()
 def forbidden(request):
@@ -84,16 +86,24 @@ def login(request):
     if "form.submitted" in request.params:
         user_name = request.params.get('username')
         user_pwd = request.params.get('password')
+        captcha_id = request.params.get('captcha_id')
+        captcha_code = request.params.get('captcha_code')
         with transaction.manager:
+            if not captcha_id or not captcha_code:
+                err_msg = u'验证失败'
+            elif not validate(captcha_id, captcha_code):
+                err_msg = u'验证失败'
             user = DBSession.query(TapUser).filter_by(name=user_name).first()
             if not user:
                 err_msg = u'用户不存在'
             elif user and not valid_password(user, user_pwd):
                 err_msg = u'密码错误'
-            else:
+
+            if not err_msg:
                 headers = remember(request, user.id, max_age=86400)
                 return HTTPFound(location=next_url, headers=headers)
 
+    captcha_id = gen_captcha()
     return render_to_response('templates/login.html', locals(), request=request)
 
 
@@ -301,16 +311,25 @@ class Management(object):
             # load relation objects
             spark_data = {}
             spark_time = {}
+            et = datetime.datetime.now() - datetime.timedelta(minutes=5)
+            end_time = datetime.datetime(et.year, et.month, et.day, et.hour,
+                                         et.minute)
+            start_time = end_time - datetime.timedelta(minutes=35)
             for api in apis:
                 user_create = api.user_create
                 query = DBSession.query(TapApiStats)\
-                    .filter_by(api_id=api.id, client_id=-1)\
+                    .filter(TapApiStats.api_id==api.id,
+                            TapApiStats.client_id==-1,
+                            TapApiStats.occurrence_time<=end_time,
+                            TapApiStats.occurrence_time>start_time)\
                     .order_by(TapApiStats.occurrence_time.desc())
                 query = query.limit(35)
                 timeseries = [(_q.occurrence_time, _q.occurrence_total)
                               for _q in query]
-                ChartsGen.fix_timeseries(timeseries, 35,
-                                         interval=datetime.timedelta(minutes=1))
+                if not timeseries or timeseries[-1][0] != end_time:
+                    timeseries.append((end_time, 0))
+                timeseries = ChartsGen.fix_timeseries(
+                    timeseries, 35, interval=datetime.timedelta(minutes=1))
                 spark_data[api.id] = ','.join([str(t[1]) for t in timeseries])
                 _spark_time = [t[0].strftime('%Y-%m-%d %H:%M')
                               for t in timeseries]
@@ -722,9 +741,12 @@ class ChartsGen(object):
             avg_data.append((occurrence_time, stat.elapse_avg))
             max_data.append((occurrence_time, stat.elapse_max))
             min_data.append((occurrence_time, stat.elapse_min))
-        self.fix_timeseries(avg_data, max_points=max_points)
-        self.fix_timeseries(max_data, max_points=max_points)
-        self.fix_timeseries(min_data, max_points=max_points)
+        avg_data = self.fix_timeseries(avg_data, max_points=max_points)
+        serie_avg['data'] = avg_data
+        max_data = self.fix_timeseries(max_data, max_points=max_points)
+        serie_max['data'] = max_data
+        min_data = self.fix_timeseries(min_data, max_points=max_points)
+        serie_min['data'] = min_data
         return series
 
     def chart_visit(self, category):
@@ -772,8 +794,10 @@ class ChartsGen(object):
             occurrence_time = int(occurrence_time * 1000)
             visit_data.append((occurrence_time, stat.occurrence_total))
             error_data.append((occurrence_time, stat.exception_total))
-        self.fix_timeseries(visit_data, max_points=max_points)
-        self.fix_timeseries(error_data, max_points=max_points)
+        visit_data = self.fix_timeseries(visit_data, max_points=max_points)
+        visit['data'] = visit_data
+        error_data = self.fix_timeseries(error_data, max_points=max_points)
+        error['data'] = error_data
         return [visit, error]
 
     @classmethod
@@ -783,7 +807,7 @@ class ChartsGen(object):
         :param timeseries: [(timestamp, value)]
         :return:
         """
-        if len(timeseries) <= 1:
+        if len(timeseries) < 1:
             return
 
         timeseries.sort(key=lambda x: x[0])
@@ -793,28 +817,41 @@ class ChartsGen(object):
                          range(1, len(timeseries))]
             interval = min(intervals)
 
-        fix_data = []
-        using_points = []
-        for i in range(len(timeseries)-1, 0, -1):
-            point_current = timeseries[i]
-            using_points.append(point_current)
-            point_prev = timeseries[i-1]
-            while (point_current[0] - point_prev[0]) > interval:
-                point_current = (point_current[0] - interval, 0)
-                fix_data.append(point_current)
-                if len(fix_data) == (max_points-len(using_points)):
-                    break
-            if len(fix_data) == (max_points-len(using_points)):
-                break
+        # first data point is latest, fill point by interval
+        temp = {}
+        for timestamp, value in timeseries:
+            temp[timestamp] = value
+        latest_time = timeseries[-1][0]
+        result = []
+        for i in range(max_points):
+            timestamp = latest_time - (interval * i)
+            value = temp.get(timestamp, 0)
+            result.append((timestamp, value))
+        result.reverse()
+        return result
 
-        if not fix_data:
-            return
-        using_points.extend(fix_data)
-        using_points.sort(key=lambda x: x[0])
-        del timeseries[:]
-        timeseries.extend(using_points)
-        if len(timeseries) > max_points:
-            timeseries = timeseries[-max_points:]
+        # fix_data = []
+        # using_points = []
+        # for i in range(len(timeseries)-1, 0, -1):
+        #     point_current = timeseries[i]
+        #     using_points.append(point_current)
+        #     point_prev = timeseries[i-1]
+        #     while (point_current[0] - point_prev[0]) > interval:
+        #         point_current = (point_current[0] - interval, 0)
+        #         fix_data.append(point_current)
+        #         if len(fix_data) == (max_points-len(using_points)):
+        #             break
+        #     if len(fix_data) == (max_points-len(using_points)):
+        #         break
+        #
+        # if not fix_data:
+        #     return
+        # using_points.extend(fix_data)
+        # using_points.sort(key=lambda x: x[0])
+        # del timeseries[:]
+        # timeseries.extend(using_points)
+        # if len(timeseries) > max_points:
+        #     timeseries = timeseries[-max_points:]
 
     @view_config(route_name="charts")
     def charts(self):
