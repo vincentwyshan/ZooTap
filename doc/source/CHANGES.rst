@@ -1,6 +1,12 @@
 版本记录
 ========
 
+
+0.3.5
+-----
+- Fix bug: can't get cache data in the page API->CONFIG->TAB[CACHE]
+
+
 0.3.4
 -----
 - 登录部分增加验证码验证登录
