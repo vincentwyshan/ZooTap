@@ -50,20 +50,21 @@ from tap.models import (
     TapUserPermission,
     TapPermission,
     Task,
+    TapApiClientCustomAuth,
     CaptchaCode,
 )
 
 # 发布时取消注释
-@view_config(context=Exception)
-def exception_view(context, request):
-    if isinstance(context, exceptions.UserNotAvailable):
-        # 用户失效，退出登录
-        headers = forget(request)
-        return HTTPFound(location='/', headers=headers)
-
-    response = Response('Internal Server Error')
-    response.status = 500
-    return response
+# @view_config(context=Exception)
+# def exception_view(context, request):
+#     if isinstance(context, exceptions.UserNotAvailable):
+#         # 用户失效，退出登录
+#         headers = forget(request)
+#         return HTTPFound(location='/', headers=headers)
+#
+#     response = Response('Internal Server Error')
+#     response.status = 500
+#     return response
 
 @forbidden_view_config()
 def forbidden(request):
@@ -510,8 +511,14 @@ class Management(object):
 
     @view_config(route_name="client_detail", permission="view")
     def client_detail(self):
+        client_id = int(self.request.matchdict['client_id'])
         with transaction.manager:
-            client_id = int(self.request.matchdict['client_id'])
+            client = DBSession.query(TapApiClient).get(client_id)
+            if not client.custom_auth:
+                custom_auth = TapApiClientCustomAuth(client_id=client.id)
+                DBSession.add(custom_auth)
+
+        with transaction.manager:
             client = DBSession.query(TapApiClient).get(client_id)
 
             # eagle load

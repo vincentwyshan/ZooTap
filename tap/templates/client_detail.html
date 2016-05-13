@@ -88,7 +88,7 @@
                         </div>
                         <div class="col-sm-6">
                             <a id="save-config" style="margin-top: 2px" class="btn btn-xs btn-primary no-border" href="#"><i class="ace-icon fa fa-save"></i>保存</a>
-                            <a id="new-para" client_id="${client.custom_auth.id}" style="margin-top: 2px;display: ${'none' if client.auth_type=='TOKEN' else ''};"
+                            <a id="new-para" client_id="${client.custom_auth.id if client.custom_auth else ''}" style="margin-top: 2px;display: ${'none' if client.auth_type=='TOKEN' else ''};"
                                class="btn btn-xs btn-success no-border"
                                href="#">
                                 <i class="ace-icon fa fa-plus bigger-130"></i>增加参数

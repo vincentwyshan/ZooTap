@@ -17,7 +17,7 @@
 
 <div id="custom-settings" class="col-xs-12" style="margin-top: 5px; display: ${'none' if client.auth_type=='TOKEN' else ''}">
     <div>
-        %for para in client.custom_auth.paras:
+        %for para in (client.custom_auth.paras if client.custom_auth else []):
         <div class="form-group" style="margin-top:15px">
             <div class="col-xs-2">
                 <div class="input-group">
@@ -103,7 +103,7 @@
     </div>
 
     <input type="hidden" name="source" />
-    <div id="editor" style="height:400px;border: 1px solid #c5d0dc;">${client.custom_auth.source}</div>
+    <div id="editor" style="height:400px;border: 1px solid #c5d0dc;">${client.custom_auth.source if client.custom_auth else ''}</div>
 
 </div>
 
