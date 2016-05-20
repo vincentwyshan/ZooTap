@@ -72,6 +72,9 @@ def require_key(request):
         access_key.access_expire = int(time.time()) + expire
         DBSession.add(access_key)
 
+        # TODO Performance improvement. support redis/memcached/mongodb
+        # insert access_key to redis/memcached/mongodb
+
         result = dict(access_key=key, expire_time=access_key.access_expire)
         response = Response(json.dumps(result),
                             headerlist=[('Access-Control-Allow-origin', '*',)])
@@ -92,6 +95,7 @@ def valid_key(key, config):
 
     with transaction.manager:
         for auth in config.auth_clients:
+            # TODO Performance improvement. support redis/memcached/mongodb
             access_key = DBSession.query(TapApiAccessKey).filter_by(
                 access_key=key, client_id=auth.client_id).first()
             if not access_key:

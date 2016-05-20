@@ -120,6 +120,7 @@ def cache_fn1(expire):
             keys.insert(0, func.__name__)
             key = 'fn.' + str(hash(repr(keys))).replace('-', '_')
 
+            # TODO same cache request mutex
             def creator():
                 return func(*kargs, **kwarg)
 
