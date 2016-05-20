@@ -14,3 +14,5 @@ Getting Started
 - start web server: pserve development.ini
 - start stats service: tag_stats development.ini
 
+
+Migrate from bitbucket
