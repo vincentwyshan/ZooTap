@@ -75,6 +75,10 @@ def add_route(config):
                      factory="tap.security.AuthControl")
     config.add_route('api_release', '/management/api/{api_id}/release',
                      factory="tap.security.AuthControl")
+    config.add_route('api_release_version',
+                     '/management/api/{api_id}/release/{release_id}',
+                     factory="tap.security.AuthControl")
+
     config.add_route('api_stats', '/management/api/{api_id}/stats',
                      factory="tap.security.AuthControl")
     config.add_route("api_cachemanage", "/management/api/{api_id}/cachemanage",
@@ -98,6 +102,7 @@ def add_route(config):
     config.add_route("charts", "/management/charts")
 
     # 上传Excel
+    # TODO 未设置权限
     config.add_route("upload_excel", "/management/tools/upload-excel")
     config.add_route("upload_rcv", "/management/tools/upload-file")
     config.add_route("upload_progress", "/management/tools/upload-progress")

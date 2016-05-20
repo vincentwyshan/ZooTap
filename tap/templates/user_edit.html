@@ -194,7 +194,8 @@ var checkChildren = function(permissionName, inputName, value){
                     // 标记，避免迭代传递事件
                     $(this).next().attr('noclick', '1');
                     // 点击
-                    $(this).next().trigger('click');
+                    // $(this).next().trigger('click');
+                    this.checked = !this.checked;
                 }
             });
         }

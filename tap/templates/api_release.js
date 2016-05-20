@@ -34,4 +34,11 @@ $(document).ready(function(){
     $('#btn-save-release').click(saveRelease);
 
     $('#btn-api-test').click(apiTest);
+
+    $('a[data-releaseid]').on('click', function(){
+        $('#myModal1Label').text('Release - '+$(this).text());
+        $('#release-version').attr('src', 'release/'+$(this).attr('data-releaseid'));
+        $('#myModal1').modal();
+        return false;
+    })
 });

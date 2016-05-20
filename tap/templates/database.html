@@ -148,20 +148,28 @@ function editDB(){
     $('tr').removeClass('success');
     $(this).addClass('success');
     var tr = $(this);
-    $('input[name=name]').attr('disabled', true);
-    $('input[name=id]').val(tr.attr('data-id'));
-    $('input[name=name]').val(tr.children('td:nth-child(1)').text());
-    $('select[name=dbtype]').val(tr.children('td:nth-child(2)').text());
-    $('select[name=dbtype]').trigger("chosen:updated");
-    //$('input[name=connstring]').val(tr.children('td:nth-child(5)').text());
-    $('textarea[name=description]').val(tr.attr('data-description'));
-    $('textarea[name=options]').val('');
-    $('#myModal').modal();
 
     var request = $.getJSON('/management/action', {id:tr.attr('data-id'), action: 'conndisplay'});
-    $.when(request).done(function(response){
+    var success = function(response){
+        if(response.status !== 1){
+            alert(response.message);
+            return;
+        }
         $('input[name=connstring]').val(response.connstring);
-    });
+        $('input[name=name]').attr('disabled', true);
+        $('input[name=id]').val(tr.attr('data-id'));
+        $('input[name=name]').val(tr.children('td:nth-child(1)').text());
+        $('select[name=dbtype]').val(tr.children('td:nth-child(2)').text());
+        $('select[name=dbtype]').trigger("chosen:updated");
+        //$('input[name=connstring]').val(tr.children('td:nth-child(5)').text());
+        $('textarea[name=description]').val(tr.attr('data-description'));
+        $('textarea[name=options]').val('');
+        $('#myModal').modal();
+    }
+    var fail = function(error){
+        alert("加载失败!");
+    }
+    $.when(request).then(success, fail);
 }
 function startEdit(){
     $('table tbody tr').addClass('cursor-pointer');

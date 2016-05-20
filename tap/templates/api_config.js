@@ -53,8 +53,10 @@ function newPara(){
             html = html.replace(/{{para.default}}/g, '');
             html = $(html);
             html.removeAttr('id');
+            html = $(html)
             $('#sample-para').before(html);
             html.show();
+            html.find('.delete-para').click(delPara);
         }
         else {
             alert(response.message);

@@ -31,6 +31,20 @@ def groupfinder(user_id, request):
     return [Everyone]
 
 
+class TempPermission(object):
+    def __init__(self, user_permission):
+        if not user_permission:
+            self.a_view = False
+            self.a_add = False
+            self.a_edit = False
+            self.a_delete = False
+        else:
+            self.a_view = user_permission.a_view
+            self.a_add = user_permission.a_add
+            self.a_edit = user_permission.a_edit
+            self.a_delete = user_permission.a_delete
+
+
 class AuthControl(object):
     def __init__(self, request):
         self.request = request
@@ -69,12 +83,36 @@ class AuthControl(object):
         return result
 
     def get_userperm(self, perm_name):
-        need_permission, action = perm_name.split(':')
-        permission = DBSession.query(TapPermission).filter_by(
-            name=need_permission).first()
-        user_perm = DBSession.query(TapUserPermission).filter_by(
-            user_id=self.request.user.id, permission_id=permission.id).first()
-        return user_perm
+        # import pdb; pdb.set_trace()
+        with transaction.manager:
+            need_permission, action = perm_name.split(':')
+            permission = DBSession.query(TapPermission).filter_by(
+                name=need_permission).first()
+            user_perm = DBSession.query(TapUserPermission).filter_by(
+                user_id=self.request.user.id, permission_id=permission.id).first()
+
+            user_perm = TempPermission(user_perm)
+
+            if not need_permission.startswith('SYS') and '.' in need_permission:
+                permissions = need_permission.split('.')
+                for i in range(len(permissions)):
+                    permission = '.'.join(permissions[:i+1])
+                    permission = DBSession.query(TapPermission).filter_by(
+                        name=permission
+                    ).first()
+                    if not permission:
+                        continue
+                    _perm = DBSession.query(TapUserPermission).filter_by(
+                        user_id=self.request.user.id,
+                        permission_id=permission.id
+                    ).first()
+                    if _perm:
+                        user_perm.a_add = (user_perm.a_add or _perm.a_add)
+                        user_perm.a_edit = (user_perm.a_edit or _perm.a_edit)
+                        user_perm.a_delete = (user_perm.a_delete or
+                                              _perm.a_delete)
+                        user_perm.a_view = (user_perm.a_view or _perm.a_view)
+            return user_perm
 
     def project_name(self, project_id):
         project = DBSession.query(TapProject).get(project_id)
@@ -89,7 +127,7 @@ class AuthControl(object):
         result = None
         matchdict = self.request.matchdict
         params = self.request.params
-        if path == '/management/database':
+        if path.startswith('/management/database'):
             result = 'SYS_DATABASE:view'
         elif path.startswith('/management/client'):
             result = 'SYS_CLIENT:view'
