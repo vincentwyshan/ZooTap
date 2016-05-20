@@ -5,7 +5,8 @@
 0.3.5
 -----
 - Fix bug: can't get cache data in the page API->CONFIG->TAB[CACHE]
-- Config support: set api-config-cache time, default is 3 minutes, set ENVIRONMENT CONFIG TAP_API_RELOAD to override it.
+- Config support: set api-config-cache time, default is 30 minutes, set ENVIRONMENT CONFIG TAP_API_RELOAD to override it.
+- Add hot-key to run test in api-config page. [command+enter(Mac)], [ctrl+enter(Win)]
 
 
 0.3.4

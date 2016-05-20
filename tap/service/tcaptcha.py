@@ -72,7 +72,10 @@ def validate(captcha_id, code):
             today = datetime.datetime(today.year, today.month, today.day)
             DBSession.query(CaptchaCode).filter(
                 CaptchaCode.created<today).delete()
-        return captcha.code.lower() == code.lower()
+
+        result = captcha.code.lower() == code.lower()
+        DBSession.delete(captcha)
+        return result
 
 
 @view_config(route_name='captcha_validate')

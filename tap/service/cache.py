@@ -15,6 +15,19 @@ from tap.service.interpreter import ParaHandler
 tap_cache = get_region('tap')
 
 
+def get_val(key, expire):
+    data = tap_cache.get(key, expiration_time=expire)
+
+    if isinstance(data, NoValue):
+        return None
+
+    return data
+
+
+def set_val(key, value):
+    return tap_cache.set(key, value)
+
+
 def _persistence_db(dbtype, connstring, options):
     # 只支持 MongoDB
     try:

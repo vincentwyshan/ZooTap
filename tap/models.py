@@ -289,6 +289,9 @@ Index('tap_apiclicapara_authid', TapApiClientCustomPara.customauth_id)
 
 
 class TapApiAuth(Base):
+    """
+    Relationship between Api and Client
+    """
     __tablename__ = 'tap_apiauth'
     id = Column(Integer, Sequence('seq_tapapiauth_id'), primary_key=True)
     api_id = Column(Integer, ForeignKey('tap_api.id'), nullable=False)

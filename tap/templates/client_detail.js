@@ -19,10 +19,13 @@ $(document).ready(function(){
     }
     $('a[href='+hash+']').trigger('click');
     $('[data-toggle=collapse]').click(function(){window.location.hash = $(this).attr('href')});
+
+    $('#refresh-token').click(refreshToken);
 });
 
 
 function newPara(){
+    // actually this client_id is customauth.id
     var client_id = $(this).attr('client_id');
     var data = {id:client_id, 'action':'clientparanew'};
 
@@ -48,6 +51,28 @@ function newPara(){
 
     $.post('/management/action', data, callback, 'json');
     return false;
+}
+
+function refreshToken(){
+    var client_id = $(this).attr('client_id');
+
+    var data = {client_id: client_id, 'action': 'clientrefreshtoken'};
+    var request = $.post('/management/action', data);
+
+    var success = function(response){
+        if(response.success == 1){
+            $('#token-block pre').text(response.token);
+        }
+        else{
+            alert('更新失败:' + response.message);
+        }
+    };
+
+    var fail = function(error){
+        alert('服务器错误!');
+    }
+
+    $.when(request).then(success, fail);
 }
 
 function saveConfig(){
@@ -96,13 +121,13 @@ function authChange(){
     if(val == 'CUSTOM'){
         $('#custom-settings').show();
         $('#new-para').show();
-        $('#refresh-token').hide();
+        // $('#refresh-token').hide();
         // $('#token-block').hide();
     }
     else{
         $('#custom-settings').hide();
         $('#new-para').hide();
-        $('#refresh-token').show();
+        // $('#refresh-token').show();
         // $('#token-block').show();
     }
 }

@@ -84,6 +84,8 @@ function delPara(){
 }
 
 function apiTest(){
+    $('#myModal').modal();
+
     var source = editor.getValue();
     $('[name=source]').val(source);
 
@@ -125,6 +127,7 @@ function switchSourceType(){
     editor.getSession().setMode("ace/mode/"+sourceType.toLowerCase());
 }
 
+
 var editor = null;
 $(document).ready(function(){
     editor = ace.edit("editor");
@@ -135,6 +138,14 @@ $(document).ready(function(){
     editor.getSession().setMode("ace/mode/"+sourceType.toLowerCase());
     editor.getSession().setUseSoftTabs(true);
     editor.getSession().setTabSize(4);
+    // ctrl[command] + enter = hot key for run sql
+    editor.commands.addCommand({
+        name: 'runsql',
+        bindKey: {win: "Ctrl-Enter", mac: "Command-Enter"},
+        exec: function(editor){
+            apiTest();
+        }
+    })
 
     // save
     $('#btn-save-api').click(saveApi);
@@ -150,6 +161,7 @@ $(document).ready(function(){
 
     // switch source type
     $('.source-type').click(switchSourceType);
+
 });
 
 document.getElementById('form-field-description').addEventListener('keydown', function(e) {

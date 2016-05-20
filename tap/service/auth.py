@@ -11,6 +11,7 @@ from pyramid.response import Response
 from pyramid.view import view_config
 
 from tap.service.exceptions import *
+from tap.service.cache import get_val, set_val
 from tap.service.interpreter import ParaHandler
 from tap.models import (
     DBSession,
@@ -74,6 +75,7 @@ def require_key(request):
 
         # TODO Performance improvement. support redis/memcached/mongodb
         # insert access_key to redis/memcached/mongodb
+        set_val(key, client.id)
 
         result = dict(access_key=key, expire_time=access_key.access_expire)
         response = Response(json.dumps(result),
@@ -93,9 +95,15 @@ def valid_key(key, config):
     if not config.auth_clients:
         return False, None
 
+    # TODO Performance improvement. support redis/memcached/mongodb
+    cache_client_id = get_val(key, expire=3600)
+    if cache_client_id is not None:
+        for auth in config.auth_clients:
+            if auth.client_id == cache_client_id:
+                return True, auth.client_id
+
     with transaction.manager:
         for auth in config.auth_clients:
-            # TODO Performance improvement. support redis/memcached/mongodb
             access_key = DBSession.query(TapApiAccessKey).filter_by(
                 access_key=key, client_id=auth.client_id).first()
             if not access_key:

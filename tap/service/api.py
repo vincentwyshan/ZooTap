@@ -90,7 +90,7 @@ def main(request):
     return response
 
 
-@cache_fn1(int(os.environ.get('TAP_API_RELOAD', 180)))
+@cache_fn1(int(os.environ.get('TAP_API_RELOAD', 1800)))
 def load_config(project_name, api_name, version):
     if version:
         version = int(version)

@@ -77,6 +77,8 @@ def perm_check(func):
             perm = 'SYS_CLIENT:edit'
         elif 'clientparadelete' == action:
             perm = 'SYS_CLIENT:delete'
+        elif 'clientrefreshtoken' == action:
+            perm = 'SYS_CLIENT:edit'
         elif 'authclientadd' == action:
             perm = '%s.auth:add' % a.api_name(params['api_id'])
         elif 'displaytoken' == action:
@@ -143,6 +145,8 @@ class Action(object):
             result = self.release_save()
         elif 'clientsave' == action:
             result = self.client_save()
+        elif 'clientrefreshtoken' == action:
+            result = self.client_refreshtoken()
         elif 'authclientadd' == action:
             result = self.authclient_add()
         elif 'displaytoken' == action:
@@ -543,6 +547,19 @@ class Action(object):
         except BaseException, e:
             import traceback; traceback.print_exc()
             result["message"] = str(e)
+        return result
+
+    def client_refreshtoken(self):
+        result = dict(success=0, message="")
+        with transaction.manager:
+            client_id = int(self.request.params['client_id'])
+            client = DBSession.query(TapApiClient).get(client_id)
+            token = str(uuid.uuid4())
+            client.token = token
+            for auth in client.auth_list:
+                auth.token = token
+            result['success'] = 1
+            result['token'] = token
         return result
 
     def authclient_add(self):
