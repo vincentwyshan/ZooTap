@@ -39,7 +39,7 @@
 			<td>${conn.dbtype}</td>
 			<td>${conn.user_create.name}</td>
 			<td>${conn.created}</td>
-			<td>${conn.connstring}</td>
+			<td>......</td>
 			<td style="display:none">${conn.description}</td>
 		</tr>
 		%endfor
@@ -153,10 +153,15 @@ function editDB(){
     $('input[name=name]').val(tr.children('td:nth-child(1)').text());
     $('select[name=dbtype]').val(tr.children('td:nth-child(2)').text());
     $('select[name=dbtype]').trigger("chosen:updated");
-    $('input[name=connstring]').val(tr.children('td:nth-child(5)').text());
+    //$('input[name=connstring]').val(tr.children('td:nth-child(5)').text());
     $('textarea[name=description]').val(tr.attr('data-description'));
     $('textarea[name=options]').val('');
     $('#myModal').modal();
+
+    var request = $.getJSON('/management/action', {id:tr.attr('data-id'), action: 'conndisplay'});
+    $.when(request).done(function(response){
+        $('input[name=connstring]').val(response.connstring);
+    });
 }
 function startEdit(){
     $('table tbody tr').addClass('cursor-pointer');

@@ -58,6 +58,8 @@ def perm_check(func):
             perm = 'SYS_DATABASE:view'
         elif 'connsave' == action:
             perm = 'SYS_DATABASE:edit'
+        elif 'conndisplay' == action:
+            perm = 'SYS_DATABASE:edit'
         elif 'projectsave' == action:
             perm = 'SYS_PROJECT:edit'
         elif 'apisave' == action:
@@ -129,6 +131,8 @@ class Action(object):
             result = self.conn_test()
         elif 'connsave' == action:
             result = self.conn_save()
+        elif 'conndisplay' == action:
+            result = self.conn_display()
         elif 'projectsave' == action:
             result = self.project_save()
         elif 'apisave' == action:
@@ -222,6 +226,16 @@ class Action(object):
             result["success"] = 1
         except BaseException, e:
             result["message"] = str(e)
+
+        return result
+
+    def conn_display(self):
+        result = dict(success=0, message="")
+        request = self.request
+        conn_id = request.params.get('id')
+        with transaction.manager:
+            conn = DBSession.query(TapDBConn).get(conn_id)
+            result['connstring'] = conn.connstring
 
         return result
 
