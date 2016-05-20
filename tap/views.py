@@ -29,7 +29,7 @@ from tap.service.common import dict2api, api2dict
 from tap.service.common import CadaEncoder, measure
 from tap.service.common import conn_get, stmt_split
 from tap.service.common import show_tables, Paginator
-from tap.service.apisuit import Program
+from tap.service.api import Program
 from tap.service import exceptions
 from tap.service.tcaptcha import gen_captcha, validate
 from tap.management.uicontrol import (

@@ -16,6 +16,7 @@ from tap.models import DBSession, CaptchaCode
 
 
 chars = map(chr, range(65, 91) + range(97, 123))
+# remove the confusion characters
 chars.remove('I')
 chars.remove('i')
 chars.remove('L')

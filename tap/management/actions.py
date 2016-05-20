@@ -12,7 +12,7 @@ import simplejson as json
 
 from tap.security import encrypt_password
 from tap.service.cache import cache_get, cache_delete
-from tap.service.apisuit import Program
+from tap.service.api import Program
 from tap.security import AuthControl
 from tap.service.common import (
     conn_get, api2dict, CadaEncoder, dbconn_ratio_parse, dict2api
