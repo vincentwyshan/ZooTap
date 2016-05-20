@@ -9,6 +9,7 @@ Standard attribute in response:
 
 __author__ = 'Vincent@Home'
 
+import os
 import re
 import sys
 import time
@@ -89,7 +90,7 @@ def main(request):
     return response
 
 
-@cache_fn1(180)
+@cache_fn1(int(os.environ.get('TAP_API_RELOAD', 180)))
 def load_config(project_name, api_name, version):
     if version:
         version = int(version)

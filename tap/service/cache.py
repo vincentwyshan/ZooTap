@@ -9,6 +9,7 @@ from dogpile.cache.api import NoValue
 from pyramid_dogpile_cache import get_region
 
 from tap.service.common import conn_get
+from tap.service.interpreter import ParaHandler
 
 
 tap_cache = get_region('tap')
@@ -44,17 +45,19 @@ def cache_key(config, version, *args, **kwargs):
 
 
 def cache_delete(config, version, paras):
-    from tap.service.apisuit import Program
-    program = Program(config, version)
-    paras = program._para_prepare(paras, config.paras)
+    # from tap.service.apisuit import Program
+    # program = Program(config, version)
+    # paras = program._para_prepare(paras, config.paras)
+    paras = ParaHandler.prepare(paras, config.paras)
     key = cache_key(config, version, paras)
     tap_cache.delete(key)
 
 
 def cache_get(config, version, paras):
-    from tap.service.apisuit import Program
-    program = Program(config, version)
-    paras = program._para_prepare(paras, config.paras)
+    # from tap.service.apisuit import Program
+    # program = Program(config, version)
+    # paras = program._para_prepare(paras, config.paras)
+    paras = ParaHandler.prepare(paras, config.paras)
     key = cache_key(config, version, paras)
     data = tap_cache.get(key, expiration_time=config.cache_time,
                          ignore_expiration=False)
@@ -117,6 +120,7 @@ def cache_fn1(expire):
             keys.insert(0, func.__name__)
             key = 'fn.' + str(hash(repr(keys))).replace('-', '_')
 
+            # TODO same cache request mutex
             def creator():
                 return func(*kargs, **kwarg)
 

@@ -35,8 +35,10 @@ requires = [
 if sys.version_info < (2, 7):
     requires.append('ordereddict')
 
+import tap
+
 setup(name='tap',
-      version='0.3.4',
+      version=tap.__version__,
       description='tap',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
