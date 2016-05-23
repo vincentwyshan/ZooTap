@@ -94,6 +94,8 @@ class AuthControl(object):
             user_perm = TempPermission(user_perm)
 
             if not need_permission.startswith('SYS') and '.' in need_permission:
+                # if parent-permission has the authorization,
+                # also child-permission has it.
                 permissions = need_permission.split('.')
                 for i in range(len(permissions)):
                     permission = '.'.join(permissions[:i+1])

@@ -1,6 +1,10 @@
 版本记录
 ========
 
+0.3.6
+-----
+- User permission bug fix, A:view A.B:view
+- View release version config
 
 0.3.5
 -----

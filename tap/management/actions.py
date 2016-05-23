@@ -236,6 +236,7 @@ class Action(object):
         with transaction.manager:
             conn = DBSession.query(TapDBConn).get(conn_id)
             result['connstring'] = conn.connstring
+            result['success'] = 1
 
         return result
 

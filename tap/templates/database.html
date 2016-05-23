@@ -151,7 +151,7 @@ function editDB(){
 
     var request = $.getJSON('/management/action', {id:tr.attr('data-id'), action: 'conndisplay'});
     var success = function(response){
-        if(response.status !== 1){
+        if(response.success !== 1){
             alert(response.message);
             return;
         }
