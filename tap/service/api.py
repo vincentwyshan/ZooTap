@@ -328,10 +328,10 @@ class Program(object):
                 paras = ParaHandler.prepare(paras, self.config.paras)
                 result = cache_fn(self.config, self.ver_num, func, paras)
                 result['sys_status'] = 200
-            except BaseException, e:
+            except BaseException as e:
                 import traceback
                 trace = traceback.format_exc()
-                self._report_stats_exc(stats, str(e), trace)
+                self.report_stats_exc(stats, str(e), trace)
                 result = dict(
                     sys_elapse=[],
                     table=[],
@@ -559,7 +559,7 @@ class Program(object):
                 raise Exception("cfn_export failed: not found field %s" % name)
             paras[name] = row[name]
 
-    def _report_stats_exc(self, stats, exc_message, exc_trace):
+    def report_stats_exc(self, stats, exc_message, exc_trace):
         exc_type, exc_value, tb = sys.exc_info()
         context = None
         if tb is not None:
