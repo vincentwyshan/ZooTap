@@ -9,6 +9,7 @@ import socket
 import warnings
 import threading
 from functools import wraps
+from optparse import OptionParser
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -21,6 +22,7 @@ import transaction
 
 from tap.servicedef import TapService
 from tap.scripts import init_session_from_cmd
+from tap.scripts.dbtools import initdb
 from tap.models import (
     DBSession,
     TapApi,
@@ -50,12 +52,7 @@ STATS_EXC = {}
 #     occurrence_last
 # }
 
-# STATS_ELAPSE_CLIENT = {}
-# (API-ID, CLIENT-ID): { }
-
-# STATS_EXC_CLIENT = {}
-# (API-ID, CLIENT-ID, exc_trace): {}
-
+# COUNTER = 0
 
 class Handler(object):
     def ping(self):
@@ -72,6 +69,12 @@ class Handler(object):
         :param params-exc_trace: optional
         :param params-exc_context: optional, json
         """
+        # testing
+        # global COUNTER
+        # COUNTER += 1
+        # if COUNTER % 1000 == 0:
+        #     print 'COUNTER:', COUNTER
+
         # 访问量和耗时统计(按 api_id)
         api_id = params['api_id']
 
@@ -160,7 +163,8 @@ def flush_log(occurrence_time):
                 DBSession.flush()
 
             # row-lock update
-            print api.name, client_id, elapse['occurrence_total']
+            print '\tName:', api.name, 'ClientId:', client_id, \
+                'Occurrence:', elapse['occurrence_total']
             stats = DBSession.query(TapApiStats).with_lockmode('update')\
                 .filter(TapApiStats.id==stats.id).first()
 
@@ -200,7 +204,8 @@ def flush_log(occurrence_time):
                 DBSession.add(stats)
                 DBSession.flush()
 
-            print api.name, client_id, exc['exc_type']
+            print '\tName:', api.name, 'ClientId:', client_id, 'Error:', \
+                exc['exc_type']
             stats = DBSession.query(TapApiErrors).with_lockmode('update')\
                 .filter(TapApiErrors.id==stats.id).first()
 
@@ -309,7 +314,8 @@ def _interval_flush(ivalue):
         except:
             import traceback
             traceback.print_exc()
-        print 'Today:', now, len(_oneday), ivalue, interval
+        print '[%s:%s]' % (ivalue, now), 'time points left:', len(_oneday),\
+              ', ' 'wake up: %s[%s]' % (time_awake, interval)
         time.sleep(interval)
 
 
@@ -402,9 +408,17 @@ def get_client(host='127.0.0.1', force_new=False):
 
 
 def main():
-    init_session_from_cmd()
+    usage = "usage: %prog production.ini [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-i', type="string", dest="interval",
+                      default="1M",
+                      help="stats interval: [1M/5M/10M/30M/1H]")
+    (options, args) = parser.parse_args()
 
-    backend = threading.Thread(target=interval_flush, args=('1M',))
+    # init_session_from_cmd()
+    initdb()
+
+    backend = threading.Thread(target=interval_flush, args=(options.interval,))
     backend.daemon = True
     backend.start()
 

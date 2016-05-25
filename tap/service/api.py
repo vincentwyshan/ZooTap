@@ -586,7 +586,7 @@ class Program(object):
         try:
             # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
             if not self.rpc_client:
-                self.rpc_client = get_client()
+                self.rpc_client = get_client(force_new=True)
             if random.random() > 0.1:
                 self.rpc_client.ping()
             self.rpc_client.report(stats)
