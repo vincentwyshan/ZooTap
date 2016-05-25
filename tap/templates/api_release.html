@@ -138,7 +138,7 @@
             %for release in releases:
             <tr>
                 <td>${loop.index + 1}</td>
-                <td><a href="">v${release.version}</a></td>
+                <td><a href="" data-releaseid="${release.id}">v${release.version}</a></td>
                 <td>${','.join(release_db[release.id].keys())}</td>
                 <td>${release.user_release.name}</td>
                 <td><b class="green">/api/${release.project_name}/${release.api_name}/v${release.version}</b></td>
@@ -205,7 +205,6 @@
 <%block name="jsblock">
 <script>
     <%include file="api_release.js"/>
-
 </script>
 </%block>
 
@@ -219,6 +218,21 @@
                 <h4 class="modal-title" id="myModalLabel">运行测试 - ${api.cnname}</h4>
             </div>
             <div class="modal-body">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="myModal1" tabindex="-1" role="dialog" aria-labelledby="myModal1Label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModal1Label"></h4>
+            </div>
+            <div class="modal-body">
+                <iframe id="release-version" style="width:100%;min-height:500px;border:0" src=""/>
             </div>
         </div>
     </div>

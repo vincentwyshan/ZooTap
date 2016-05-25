@@ -309,10 +309,9 @@ class Program(object):
         return source, tuple(paras)
 
     def run(self, paras):
-        client_id = ''
         stats = dict(api_id=str(self.config.id),
                      project_id=str(self.config.project_id),
-                     client_id=client_id)
+                     client_id='')
         with measure() as time_used:
             try:
                 if self.config.auth_type == 'AUTH':
@@ -328,10 +327,10 @@ class Program(object):
                 paras = ParaHandler.prepare(paras, self.config.paras)
                 result = cache_fn(self.config, self.ver_num, func, paras)
                 result['sys_status'] = 200
-            except BaseException, e:
+            except BaseException as e:
                 import traceback
                 trace = traceback.format_exc()
-                self._report_stats_exc(stats, str(e), trace)
+                self.report_stats_exc(stats, str(e), trace)
                 result = dict(
                     sys_elapse=[],
                     table=[],
@@ -559,7 +558,7 @@ class Program(object):
                 raise Exception("cfn_export failed: not found field %s" % name)
             paras[name] = row[name]
 
-    def _report_stats_exc(self, stats, exc_message, exc_trace):
+    def report_stats_exc(self, stats, exc_message, exc_trace):
         exc_type, exc_value, tb = sys.exc_info()
         context = None
         if tb is not None:
@@ -587,7 +586,7 @@ class Program(object):
         try:
             # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
             if not self.rpc_client:
-                self.rpc_client = get_client()
+                self.rpc_client = get_client(force_new=True)
             if random.random() > 0.1:
                 self.rpc_client.ping()
             self.rpc_client.report(stats)

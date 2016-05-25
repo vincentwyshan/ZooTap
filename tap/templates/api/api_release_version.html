@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta charset="utf-8"/>
+    <title>${pagename} - Cada Tap</title>
+
+    <meta name="description" content="Capitalvue Cada Tap Interface Management"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+
+    <!-- bootstrap & fontawesome -->
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/static/css/font-awesome.min.css"/>
+    <%block name="meta_head1" />
+
+    <link rel="stylesheet" href="/static/css/chosen.css"/>
+
+    <!-- page specific plugin styles -->
+
+    <!-- text fonts -->
+    <link rel="stylesheet" href="/static/css/ace-fonts.css"/>
+
+    <!-- ace styles -->
+    <link rel="stylesheet" href="/static/css/ace.min.css" id="main-ace-style"/>
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-part2.min.css"/>
+    <![endif]-->
+    <link rel="stylesheet" href="/static/css/ace-skins.min.css"/>
+    <link rel="stylesheet" href="/static/css/ace-rtl.min.css"/>
+
+
+    <!--[if lte IE 9]>
+    <link rel="stylesheet" href="/static/css/ace-ie.min.css"/>
+    <![endif]-->
+
+    <link rel="stylesheet" href="/static/jjsonviewer/jjsonviewer.css"/>
+
+    <!-- ace settings handler -->
+    <script src="/static/js/ace-extra.min.js"></script>
+
+    <!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
+
+    <!--[if lte IE 8]>
+    <script src="/static/js/html5shiv.min.js"></script>
+    <script src="/static/js/respond.min.js"></script>
+    <![endif]-->
+
+    <style type="text/css">
+    form select{
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    }
+    .source-type {
+    cursor: pointer;
+    }
+    .tab-content{border: 0}
+    body{background-color:#fff}
+    form{border-left:1px solid #e3e3e3; border-right: 1px solid #e3e3e3;}
+    </style>
+
+    <style type="text/css">
+       <%include file="../base.css"/>
+
+    </style>
+</head>
+
+
+<body class="no-skin">
+<div class="main-container container-fluid" id="main-container">
+    <form id="form-api" class="form-horizontal" role="form">
+
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="tab-content" style="padding: 0px 12px;">
+                    <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                        <h5 style=" margin-bottom: 0; ">基本信息</h5>
+                    </div>
+
+                    <!-- #section:elements.form -->
+                    <div class="form-group" style="margin-top:15px">
+                        <label class="col-xs-2 control-label"> API名 </label>
+
+                        <div class="col-xs-10">
+                            <input disabled name="name" value="${api.name}" type="text" placeholder="" class="col-xs-10">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-xs-2 control-label"> 名称 </label>
+
+                        <div class="col-xs-10">
+                            <input disabled name="cnname" value="${api.cnname}" type="text" placeholder="" class="col-xs-10">
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="bottom"
+                              data-content="<span>SQL 开发模式下默认使用第一个数据库</span>"
+                              title="" data-original-title="说明">?</span>
+                            数据库
+                        </label>
+
+                        <div class="col-sm-10">
+                            <input disabled type="text" class="col-xs-10" name="dbconn" value="${','.join([str(dbconn.name) for dbconn in api.dbconn])}"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="bottom"
+                              data-content="<ol><li>操作类型为<b>只读</b>才能使用负载均衡</li><li>负载均衡是对数据库复制机制的支持, 可有效利用从数据库</li></ol>"
+                              title="" data-original-title="说明">?</span>
+                            负载均衡
+                        </label>
+
+                        <div class="col-sm-10">
+                            <input type="text" disabled class="col-xs-10" name="dbconn_secondary" value="${','.join([str(v) for v in api.dbconn_secondary])}"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-xs-2 control-label"> 负载均衡配置 </label>
+
+                        <div class="col-xs-10">
+                            <input disabled name="dbconn_ratio" value="${api.dbconn_ratio or ''}" type="text"
+                                   placeholder="PRIMARYDB=PRIMARYDB:20,SECONDARYDB1:40,SECONDARYDB2:40;" class="col-xs-10">
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <div class="form-group">
+                        <label class="col-xs-2 control-label"> 缓存时间 </label>
+
+                        <div class="col-xs-10">
+                            <input disabled name="cache_time" value="${api.cache_time}" type="text" placeholder="" class="col-xs-5">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                            缓存持久化
+                        </label>
+
+                        <div class="col-sm-10">
+                            <input disabled type="text" name="cache_persistencedb_id" value="${api.cache_persistencedb.name or ''}"/>
+                        </div>
+                    </div>
+
+                    <hr/>
+
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label">
+                            操作类型
+                        </label>
+
+                        <div class="col-sm-10">
+                            <input type="text" class="col-xs-10" name="writable" value="${'只读' if api.writable == False else '读写'}"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-xs-2 control-label"> 说明 </label>
+
+                        <div class="col-xs-10">
+                        <textarea name="description" type="text" id="form-field-description" placeholder="" class="col-xs-10"
+                                  style='font-family: Consolas, "Liberation Mono", Courier, monospace;' rows="10">${api.description}</textarea>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top:20px">
+            <div class="col-xs-12">
+                <div class="tab-content" style="padding: 0px 12px;">
+                    <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                        <h5 style=" margin-bottom: 0; ">
+                            参数列表
+                        <span data-toggle="popover" class="help-button" data-rel="popover" data-trigger="hover"
+                              data-placement="right"
+                              data-content="NULL: 空值<br>NOW: 当前时间"
+                              title="" data-original-title="常量或变量关键字">?</span>
+                        </h5>
+                    </div>
+                    %for para in api.paras:
+                    <div class="form-group" style="margin-top:15px">
+                        <div class="col-xs-2">
+                            <div class="input-group">
+                            <span class="input-group-addon">
+                                @
+                            </span>
+                                <input name="para-name-${para.id}" value="${para.name}" class="form-control input-mask-phone" type="text" id="form-field-mask-2" placeholder="参数名">
+                            </div>
+                        </div>
+
+                        <div class="col-xs-3">
+                            <input name="para-default-${para.id}" value="${para.default}" type="text" placeholder="默认值" class="col-xs-12">
+                        </div>
+
+                        <div class="col-xs-3">
+                            <select data-toggle="tooltip" title="参数类型" name="para-val_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                                <option ${
+                                'selected' if para.val_type=='TEXT' else ''}>TEXT</option>
+                                <option ${
+                                'selected' if para.val_type=='INT' else ''}>INT</option>
+                                <option ${
+                                'selected' if para.val_type=='DECIMAL' else ''}>DECIMAL</option>
+                                <option ${
+                                'selected' if para.val_type=='DATE' else ''}>DATE</option>
+                            </select>
+                        </div>
+
+                        <div class="col-xs-3">
+                            <select data-toggle="tooltip" title="是否可选参数" name="para-absent_type-${para.id}" placeholder="" class="col-xs-12 form-control">
+                                <option ${
+                                'selected' if para.absent_type =='NECESSARY' else ''} value="NECESSARY">必须</option>
+                                <option ${
+                                'selected' if para.absent_type =='OPTIONAL' else ''} value="OPTIONAL">可选</option>
+                            </select>
+                        </div>
+
+                    </div>
+                    %endfor
+
+                    <div id="sample-para" style="display:none">
+                        <div class="form-group" style="margin-top:15px">
+                            <div class="col-xs-2">
+                                <div class="input-group">
+                            <span class="input-group-addon">
+                                @
+                            </span>
+                                    <input name="para-name-{{para.id}}" value="{{para.name}}" class="form-control input-mask-phone" type="text" id="form-field-mask-2"
+                                           placeholder="参数名">
+                                </div>
+                            </div>
+
+                            <div class="col-xs-3">
+                                <input name="para-default-{{para.id}}" value="{{para.default}}" type="text" placeholder="默认值" class="col-xs-12">
+                            </div>
+
+                            <div class="col-xs-3">
+                                <select name="para-val_type-{{para.id}}" placeholder="" class="col-xs-12 form-control">
+                                    <option>TEXT</option>
+                                    <option>INT</option>
+                                    <option>DECIMAL</option>
+                                    <option>DATE</option>
+                                </select>
+                            </div>
+
+                            <div class="col-xs-3">
+                                <select data-toggle="tooltip" title="是否可选参数" name="para-absent_type-{{para.id}}" placeholder="" class="col-xs-12 form-control">
+                                    <option value="NECESSARY">必须</option>
+                                    <option value="OPTIONAL">可选</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+       <div class="row" style="margin-top:20px">
+            <div class="col-xs-12">
+                <div class="tab-content" style="padding: 0px 12px;">
+                    <div class="well well-sm" style=" margin: 0px -12px 0px -12px; border-top:0; border-left:0; border-right:0;">
+                        <h5 style=" margin-bottom: 0; ">
+                            代码
+                            <span class="source-type label label-lg
+                            %if api.source.source_type == 'PYTHON':
+                            label-success
+                            %else:
+                            label-default
+                            %endif
+                            arrowed-in pull-right" style="margin-top:-4px;">Python</span>
+                            <span class="source-type label label-lg
+                            %if api.source.source_type == 'SQL':
+                            label-success
+                            %else:
+                            label-default
+                            %endif
+                            arrowed-right pull-right" style="margin-top: -4px;">SQL</span>
+
+                            <input type="hidden" name="source_type" value="${api.source.source_type}">
+                        </h5>
+                    </div>
+
+                    <div id="editor" style="height:400px;margin: 0px -12px 0px -12px;border-left:0px;border-right:0px;">${api.source.source}</div>
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+<script type="text/javascript">
+    window.jQuery || document.write("<script src='/static/js/jquery.min.js'>"+"<"+"/script>");
+</script>
+
+<!-- <![endif]-->
+
+<!--[if IE]>
+<script type="text/javascript">
+ window.jQuery || document.write("<script src='/static/js/jquery1x.min.js'>"+"<"+"/script>");
+
+</script>
+<![endif]-->
+<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='/static/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+
+</script>
+<script src="/static/js/bootstrap.min.js"></script>
+
+<!-- page specific plugin scripts -->
+
+<!--[if lte IE 8]>
+<script src="/static/js/excanvas.min.js"></script>
+<![endif]-->
+<script src="/static/js/jquery-ui.custom.min.js"></script>
+<script src="/static/js/jquery.ui.touch-punch.min.js"></script>
+<script src="/static/js/jquery.easypiechart.min.js"></script>
+<script src="/static/js/jquery.sparkline.min.js"></script>
+
+<!-- ace scripts -->
+<script src="/static/js/ace-elements.min.js"></script>
+<script src="/static/js/ace.min.js"></script>
+
+<!-- the following scripts are used in demo only for onpage help and you don't need them -->
+<link rel="stylesheet" href="/static/css/ace.onpage-help.css"/>
+
+<script type="text/javascript"> ace.vars['base'] = '..'; </script>
+<script src="/static/js/ace/elements.onpage-help.js"></script>
+<script src="/static/js/ace/ace.onpage-help.js"></script>
+<script src="/static/js/chosen.jquery.min.js"></script>
+<script src="/static/js/typeahead.jquery.min.js"></script>
+
+<script src="/static/js/jquery.dataTables.min.js"></script>
+<script src="/static/js/jquery.dataTables.bootstrap.js"></script>
+
+<script src="/static/jjsonviewer/jjsonviewer.js"></script>
+
+<script src="/static/ace-editor/ace.js"></script>
+
+
+<script>
+$(document).ready(function(){
+    editor = ace.edit("editor");
+    editor.setTheme("ace/theme/xcode");
+    // 显示 tap
+    editor.setDisplayIndentGuides(true);
+    var sourceType = $.trim($('.label-success').text());
+    editor.getSession().setMode("ace/mode/"+sourceType.toLowerCase());
+    editor.getSession().setUseSoftTabs(true);
+    editor.getSession().setTabSize(4);
+    editor.setOptions({
+        readOnly: true,
+        highlightActiveLine: false,
+        highlightGutterLine: false
+    })
+    editor.renderer.$cursorLayer.element.style.opacity=0;
+    editor.container.style.pointerEvents="none"
+    editor.container.style.opacity=0.5 // or use svg filter to make it gray
+    editor.renderer.setStyle("disabled", true)
+    editor.blur()
+
+    $('input').attr('disabled', true);
+    $('textarea').attr('disabled', true);
+    $('select').attr('disabled', true);
+});
+
+
+</script>
+
+</body>
+</html>
