@@ -163,8 +163,8 @@ def flush_log(occurrence_time):
                 DBSession.flush()
 
             # row-lock update
-            print '\tName:', api.name, 'ClientId:', client_id, \
-                'Occurrence:', elapse['occurrence_total']
+            print '\tName:', api.name, ', ClientId:', client_id, \
+                ', Occurrence:', elapse['occurrence_total']
             stats = DBSession.query(TapApiStats).with_lockmode('update')\
                 .filter(TapApiStats.id==stats.id).first()
 
@@ -204,7 +204,7 @@ def flush_log(occurrence_time):
                 DBSession.add(stats)
                 DBSession.flush()
 
-            print '\tName:', api.name, 'ClientId:', client_id, 'Error:', \
+            print '\tName:', api.name, ', ClientId:', client_id, ', Error:', \
                 exc['exc_type']
             stats = DBSession.query(TapApiErrors).with_lockmode('update')\
                 .filter(TapApiErrors.id==stats.id).first()
