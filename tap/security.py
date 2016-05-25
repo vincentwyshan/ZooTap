@@ -120,6 +120,10 @@ class AuthControl(object):
         project = DBSession.query(TapProject).get(project_id)
         return project.name
 
+    def project_name_byapi(self, api_id):
+        api = DBSession.query(TapApi).get(api_id)
+        return api.project.name
+
     def api_name(self, api_id):
         api = DBSession.query(TapApi).get(api_id)
         return '%s.%s' % (api.project.name, api.name)
@@ -142,9 +146,9 @@ class AuthControl(object):
         elif path.startswith('/management/project/'):
             result = '%s:view' % self.project_name(matchdict['project_id'])
         elif path.startswith('/management/api/'):
-            result = '%s:view' % self.api_name(matchdict['api_id'])
+            result = '%s:view' % self.project_name_byapi(matchdict['api_id'])
         elif path.startswith('/management/api-test'):
-            result = '%s:view' % self.api_name(params['id'])
+            result = '%s:view' % self.project_name_byapi(params['id'])
         return result
 
     @property

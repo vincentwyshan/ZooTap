@@ -18,7 +18,7 @@ from tap.service.common import (
     conn_get, api2dict, CadaEncoder, dbconn_ratio_parse, dict2api
 )
 from tap.scripts.initializedb import (
-    add_permission, add_api_permission, add_user_permission)
+    add_permission, add_user_permission)
 from tap.models import (
     DBSession,
     TapDBConn,
@@ -64,15 +64,15 @@ def perm_check(func):
             perm = 'SYS_PROJECT:edit'
         elif 'apisave' == action:
             if 'id' in params:
-                perm = '%s.config:edit' % a.api_name(params['id'])
+                perm = '%s:edit' % a.project_name_byapi(params['id'])
             else:
                 perm = '%s:add' % a.project_name(params['project_id'])
         elif 'paranew' == action:
-            perm = '%s.config:edit' % a.api_name(params['id'])
+            perm = '%s:edit' % a.project_name_byapi(params['id'])
         elif 'paradelete' == action:
-            perm = '%s.config:edit' % a.api_name(params['api_id'])
+            perm = '%s:edit' % a.project_name_byapi(params['api_id'])
         elif 'releasesave' == action:
-            perm = '%s.release:add' % a.api_name(params['api_id'])
+            perm = '%s:add' % a.project_name_byapi(params['api_id'])
         elif 'clientsave' == action:
             perm = 'SYS_CLIENT:edit'
         elif 'clientparanew' == action:
@@ -82,13 +82,13 @@ def perm_check(func):
         elif 'clientrefreshtoken' == action:
             perm = 'SYS_CLIENT:edit'
         elif 'authclientadd' == action:
-            perm = '%s.auth:add' % a.api_name(params['api_id'])
+            perm = '%s:add' % a.project_name_byapi(params['api_id'])
         elif 'displaytoken' == action:
             auth = DBSession.query(TapApiAuth).get(params['auth_id'])
-            perm = '%s.auth:view' % a.api_name(auth.api_id)
+            perm = '%s:view' % a.project_name_byapi(auth.api_id)
         elif 'displayerror' == action:
             error = DBSession.query(TapApiErrors).get(params['id'])
-            perm = '{api}.stats:view' % a.api_name(error.api_id)
+            perm = '%s:view' % a.project_name_byapi(error.api_id)
         elif 'usersave' == action:
             perm = 'SYS_USER:add'
         elif 'permissionsave' == action:
@@ -99,11 +99,11 @@ def perm_check(func):
         elif 'passwordchange' == action:
             perm = 'SYS_USER:edit'
         elif 'cacheget' == action:
-            perm = '%s.cache:view' % a.api_name(params['api_id'])
+            perm = '%s:view' % a.project_name_byapi(params['api_id'])
         elif 'cachedelete' == action:
-            perm = '%s.cache:delete' % a.api_name(params['api_id'])
+            perm = '%s:delete' % a.project_name_byapi(params['api_id'])
         elif 'cachegen' == action:
-            perm = '%s.cache:add' % a.api_name(params['api_id'])
+            perm = '%s:add' % a.project_name_byapi(params['api_id'])
         else:
             return perm_check_fail(u'没有标记接口权限')
         if perm != 'PASS':
@@ -258,7 +258,10 @@ class Action(object):
                     project.name = self.request.params.get('name').strip().upper()
                     project.cnname = self.request.params.get('cnname').strip()
                     project.description = self.request.params.get('description')  or ''
-                    add_permission(project.name, u'项目:' + project.name)
+                    permission = add_permission(
+                        project.name, u'项目:' + project.name)
+                    add_user_permission(self.request.user, permission,
+                                        True, True, True, True)
                 if 'name' in self.request.params:
                     name_valid(self.request.params.get('name'))
                     project.name = self.request.params.get('name').strip().upper()
@@ -296,12 +299,12 @@ class Action(object):
                     source = TapSource()
                     DBSession.add(source)
                     api.source = source
-                    permissions = add_api_permission(
-                        DBSession.query(TapProject).get(api.project_id), api)
-                    DBSession.flush()
-                    for perm in permissions:
-                        user = self.request.user
-                        add_user_permission(user, perm, True, True, True, True)
+                    # permissions = add_api_permission(
+                    #     DBSession.query(TapProject).get(api.project_id), api)
+                    # DBSession.flush()
+                    # for perm in permissions:
+                    #     user = self.request.user
+                    #     add_user_permission(user, perm, True, True, True, True)
                     changed = True
                 changed = obj_setattr(api, 'name', request) or changed
                 changed = obj_setattr(api, 'cnname', request) or changed

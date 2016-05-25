@@ -77,8 +77,8 @@ def init_permision():
         projects = DBSession.query(TapProject).order_by(TapProject.id.asc())
         for project in projects:
             add_permission(project.name, u'项目:' + project.name)
-            for api in project.apis:
-                add_api_permission(project, api)
+            # for api in project.apis:
+            #     add_api_permission(project, api)
 
 
 def add_api_permission(project, api):
@@ -104,6 +104,14 @@ def add_api_permission(project, api):
     return result
 
 
+def add_project_permission(project):
+    result = []
+    result.append(
+        add_permission('%s' % project.name, u'项目:%s' % project.name)
+    )
+    return result
+
+
 def add_user_permission(user, permission, view=False, edit=False,
                         add=False, delete=False):
     user_permission = TapUserPermission()
@@ -126,3 +134,7 @@ def add_permission(name, desc):
     permission.description = desc
     DBSession.add(permission)
     return permission
+
+
+# delete b from tap_permission a, tap_userpermission b where a.description like '接口%' and b.permission_id = a.id;
+# delete from tap_permission where description like '接口%';
