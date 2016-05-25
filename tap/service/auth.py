@@ -112,5 +112,7 @@ def valid_key(key, config):
 
             expire = access_key.access_expire
             if expire >= time.time():
+                # set key again
+                set_val(key, access_key.client_id)
                 return True, access_key.client_id
         return False, access_key.client_id

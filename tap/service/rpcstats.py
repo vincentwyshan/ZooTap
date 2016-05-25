@@ -9,6 +9,7 @@ import socket
 import warnings
 import threading
 from functools import wraps
+from optparse import OptionParser
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
@@ -21,6 +22,7 @@ import transaction
 
 from tap.servicedef import TapService
 from tap.scripts import init_session_from_cmd
+from tap.scripts.dbtools import initdb
 from tap.models import (
     DBSession,
     TapApi,
@@ -30,17 +32,27 @@ from tap.models import (
 
 
 STATS_ELAPSE = {}
-# API-ID: {}
+# all-client, CLIENT_ID is -1
+# (API_ID, CLIENT_ID): {
+#     elapse_max,
+#     elapse_min,
+#     elapse_avg,
+#     occurrence_total,
+#     elapse_sum,
+#     exception_total
+# }
 
 STATS_EXC = {}
-# (API-ID, exc_trace): {}
+# (API_ID, CLIENT_ID, exc_trace): {
+#     exc_type,
+#     exc_message,
+#     exc_context,
+#     occurrence_total,
+#     occurrence_first,
+#     occurrence_last
+# }
 
-STATS_ELAPSE_CLIENT = {}
-# (API-ID, CLIENT-ID): {}
-
-STATS_EXC_CLIENT = {}
-# (API-ID, CLIENT-ID, exc_trace): {}
-
+# COUNTER = 0
 
 class Handler(object):
     def ping(self):
@@ -57,51 +69,45 @@ class Handler(object):
         :param params-exc_trace: optional
         :param params-exc_context: optional, json
         """
+        # testing
+        # global COUNTER
+        # COUNTER += 1
+        # if COUNTER % 1000 == 0:
+        #     print 'COUNTER:', COUNTER
+
         # 访问量和耗时统计(按 api_id)
         api_id = params['api_id']
-        if api_id not in STATS_ELAPSE:
-            STATS_ELAPSE[api_id] = dict(
-                elapse_max=0, elapse_min=0, elapse_avg=0, occurrence_total=0,
-                elapse_sum=0, exception_total=0
-            )
-        elapse = STATS_ELAPSE[api_id]
-        elapse_now = float(params['elapse'])
-        elapse['elapse_sum'] += elapse_now
-        elapse['occurrence_total'] += 1
-        if 'exc_trace' in params:
-            elapse['exception_total'] += 1
-        if elapse_now > elapse['elapse_max']:
-            elapse['elapse_max'] = elapse_now
-        elif (elapse['elapse_min'] == 0
-              or elapse_now < elapse['elapse_min']):
-            elapse['elapse_min'] = elapse_now
 
-        elapse['elapse_avg'] = elapse['elapse_sum'] / elapse['occurrence_total']
-
-        # 访问量和耗时统计(按 client_id)
+        clients = [-1]
+        # check clients
         client_id = params.get('client_id', None)
         if client_id:
-            key = (api_id, client_id)
-            if key not in STATS_ELAPSE:
-                STATS_ELAPSE_CLIENT[key] = dict(
+            clients.append(client_id)
+
+        # unload params data
+        for client_id in clients:
+            # initialize
+            if (api_id, client_id) not in STATS_ELAPSE:
+                STATS_ELAPSE[(api_id, client_id)] = dict(
                     elapse_max=0, elapse_min=0, elapse_avg=0,
                     occurrence_total=0, elapse_sum=0, exception_total=0
                 )
-            elapse = STATS_ELAPSE_CLIENT[key]
+
+            elapse = STATS_ELAPSE[(api_id, client_id)]
+            elapse_now = float(params['elapse'])
             elapse['elapse_sum'] += elapse_now
             elapse['occurrence_total'] += 1
             if 'exc_trace' in params:
                 elapse['exception_total'] += 1
             if elapse_now > elapse['elapse_max']:
                 elapse['elapse_max'] = elapse_now
-            elif (elapse_now < elapse['elapse_min']
-                  or elapse['elapse_min'] == 0):
+            elif (elapse['elapse_min'] == 0
+                  or elapse_now < elapse['elapse_min']):
                 elapse['elapse_min'] = elapse_now
 
-            elapse_avg = elapse['elapse_sum'] / elapse['occurrence_total']
-            elapse['elapse_avg'] = elapse_avg
+            elapse['elapse_avg'] = elapse['elapse_sum'] / elapse['occurrence_total']
 
-        print 'ELAPSE:', len(STATS_ELAPSE), len(STATS_ELAPSE_CLIENT)
+        # print 'ELAPSE:', len(STATS_ELAPSE)
         if 'exc_type' not in params:
             return
 
@@ -110,21 +116,9 @@ class Handler(object):
         exc_trace = params['exc_trace']
         exc_message = params['exc_message']
         exc_context = params['exc_context']
-        key = (api_id, exc_trace)
-        if key not in STATS_EXC:
-            STATS_EXC[key] = dict(
-                exc_type=exc_type,
-                exc_message=exc_message,
-                exc_context=exc_context,
-                occurrence_total=0,
-                occurrence_first=datetime.datetime.now(),
-                occurrence_last=None
-            )
-        STATS_EXC[key]['occurrence_total'] += 1
-        STATS_EXC[key]['occurrence_last'] = datetime.datetime.now()
 
-        # 出错统计(按客户)
-        if client_id:
+        # unload errors in params
+        for client_id in clients:
             key = (api_id, client_id, exc_trace)
             if key not in STATS_EXC:
                 STATS_EXC[key] = dict(
@@ -140,19 +134,16 @@ class Handler(object):
 
 
 def flush_log(occurrence_time):
-    global STATS_ELAPSE, STATS_ELAPSE_CLIENT, STATS_EXC, STATS_EXC_CLIENT
+    global STATS_ELAPSE, STATS_EXC
     # 更新访问量和耗时统计
     # print 'client:', len(STATS_ELAPSE_CLIENT)
-    all_stats = [(key[0], key[1], elapse) for key, elapse in
-                 STATS_ELAPSE_CLIENT.items()]
-    STATS_ELAPSE_CLIENT = {}
+
     # print 'NO client:', len(STATS_ELAPSE)
-    all_stats.extend([(api_id, -1, elapse) for api_id, elapse in
+    all_stats = ([(key[0], key[1], elapse) for key, elapse in
                       STATS_ELAPSE.items()])
     STATS_ELAPSE = {}
-    print occurrence_time, 'ELAPSE:', len(STATS_ELAPSE), \
-        len(STATS_ELAPSE_CLIENT)
-    print occurrence_time, 'Stats elapse:', len(all_stats)
+    # print occurrence_time, 'ELAPSE:', len(STATS_ELAPSE)
+    # print occurrence_time, 'Stats elapse:', len(all_stats)
     for api_id, client_id, elapse in all_stats:
         with transaction.manager:
             api = DBSession.query(TapApi).get(api_id)
@@ -171,8 +162,12 @@ def flush_log(occurrence_time):
                 DBSession.add(stats)
                 DBSession.flush()
 
+            # row-lock update
+            print '\tName:', api.name, 'ClientId:', client_id, \
+                'Occurrence:', elapse['occurrence_total']
             stats = DBSession.query(TapApiStats).with_lockmode('update')\
                 .filter(TapApiStats.id==stats.id).first()
+
             stats.occurrence_time = occurrence_time
             stats.occurrence_total += elapse['occurrence_total']
             stats.exception_total += elapse['exception_total']
@@ -186,10 +181,7 @@ def flush_log(occurrence_time):
 
     # 更新 错误统计
     all_exc = [(key[0], key[1], key[2], exc) for key, exc in
-               STATS_EXC_CLIENT.items()]
-    STATS_EXC_CLIENT = {}
-    all_exc.extend([(key[0], -1, key[1], exc) for key, exc in
-                    STATS_EXC.items()])
+               STATS_EXC.items()]
     STATS_EXC = {}
     # print 'Stats exceptions:', len(all_exc)
     for api_id, client_id, exc_trace, exc in all_exc:
@@ -212,8 +204,11 @@ def flush_log(occurrence_time):
                 DBSession.add(stats)
                 DBSession.flush()
 
+            print '\tName:', api.name, 'ClientId:', client_id, 'Error:', \
+                exc['exc_type']
             stats = DBSession.query(TapApiErrors).with_lockmode('update')\
                 .filter(TapApiErrors.id==stats.id).first()
+
             stats.occurrence_time = occurrence_time
             # stats.occurrence_time = exc['occurrence_time']
             stats.occurrence_total += exc['occurrence_total']
@@ -229,47 +224,35 @@ def flush_log(occurrence_time):
 
 
 def interval_vals(ivalue):
+    """
+
+    :param ivalue:
+    :return:
+    """
     assert ivalue in ['1M', '5M', '10M', '30M', '1H']
 
-    _actpoint = []
+    today = datetime.date.today()
+    start = datetime.datetime(today.year, today.month, today.day)
+    interval = 60
     if ivalue == '1M':
-        _actpoint = [(i, 00) for i in range(60)]
+        pass
     elif ivalue == '5M':
-        _actpoint = [
-            (0, 00), (5, 00),
-            (10, 00), (15, 00),
-            (20, 00), (25, 00),
-            (30, 00), (35, 00),
-            (40, 00), (45, 00),
-            (50, 00), (55, 00),
-        ]
+        interval = 60 * 5
     elif ivalue == '10M':
-        _actpoint = [
-            (0, 00),
-            (10, 00),
-            (20, 00),
-            (30, 00),
-            (40, 00),
-            (50, 00),
-        ]
+        interval = 60 * 10
     elif ivalue == '30M':
-        _actpoint = [
-            (30, 00), (00, 00)
-        ]
+        interval = 60 * 30
     elif ivalue == '1H':
-        _actpoint = [
-            (59, 59)
-        ]
+        interval = 60 * 60
 
-    oneday = []
-    for i in range(24):
-        for j in range(len(_actpoint)):
-            point = _actpoint[j]
-            oneday.append(
-                (i, point[0], point[1])
-            )
-    oneday.sort()
-    return oneday
+    _actpoints = []
+    while (start.year == today.year and start.month == today.month and
+               start.day == today.day):
+        _actpoints.append(
+            (start.hour, start.minute, start.second)
+        )
+        start += datetime.timedelta(seconds=interval)
+    return _actpoints
 
 
 def interval_flush(ivalue):
@@ -277,11 +260,10 @@ def interval_flush(ivalue):
         try:
             _interval_flush(ivalue)
         except:
+            print '\n\n', '*' * 100
+            print datetime.datetime.now()
             import traceback
             traceback.print_exc()
-            from raven import Client
-            sentry = Client('http://80bb9d1abcf94d048ca29aa8b9a236d1:0a0bb7d150424a81ba3ca04935e9a7ff@sentry.iqnode.cn/6')
-            sentry.captureException()
 
 
 def _interval_flush(ivalue):
@@ -292,15 +274,15 @@ def _interval_flush(ivalue):
     while True:
         try:
             if time_awake:
-                flush_log(datetime.datetime(time_awake.year,
-                                            time_awake.month, time_awake.day,
-                                            time_awake.hour, time_awake.minute))
+                flush_log(
+                    datetime.datetime(
+                        time_awake.year, time_awake.month,
+                        time_awake.day, time_awake.hour, time_awake.minute
+                    )
+                )
         except:
             import traceback
             traceback.print_exc()
-            from raven import Client
-            sentry = Client('http://80bb9d1abcf94d048ca29aa8b9a236d1:0a0bb7d150424a81ba3ca04935e9a7ff@sentry.iqnode.cn/6')
-            sentry.captureException()
         finally:
             time.sleep(1)
 
@@ -315,9 +297,10 @@ def _interval_flush(ivalue):
                     if now_datetime > time_point:
                         time_point = _oneday.pop(0)
                         continue
-                    time_awake = datetime.datetime(now.year, now.month, now.day,
-                                                   time_point[0], time_point[1],
-                                                   time_point[2])
+                    time_awake = datetime.datetime(
+                        now.year, now.month, now.day,
+                        time_point[0], time_point[1], time_point[2]
+                    )
                     interval = (time_awake - now).seconds
                     break
             if interval is None:
@@ -331,10 +314,8 @@ def _interval_flush(ivalue):
         except:
             import traceback
             traceback.print_exc()
-            from raven import Client
-            sentry = Client('http://80bb9d1abcf94d048ca29aa8b9a236d1:0a0bb7d150424a81ba3ca04935e9a7ff@sentry.iqnode.cn/6')
-            sentry.captureException()
-        print 'Today:', now, len(_oneday), ivalue, interval
+        print '[%s:%s]' % (ivalue, now), 'time points left:', len(_oneday),\
+              ', ' 'wake up: %s[%s]' % (time_awake, interval)
         time.sleep(interval)
 
 
@@ -405,7 +386,7 @@ def run_server():
 
     #server = TServer.TSimpleServer(processor, transport, tfactory, pfactory)
 
-    # You could do one of these for a multithreaded server
+    # You could choose one of these for a multiple threaded server
     server = TServer.TThreadedServer(processor, transport, tfactory, pfactory)
     #server = TServer.TThreadPoolServer(processor, transport, tfactory, pfactory)
 
@@ -427,9 +408,17 @@ def get_client(host='127.0.0.1', force_new=False):
 
 
 def main():
-    init_session_from_cmd()
+    usage = "usage: %prog production.ini [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-i', type="string", dest="interval",
+                      default="1M",
+                      help="stats interval: [1M/5M/10M/30M/1H]")
+    (options, args) = parser.parse_args()
 
-    backend = threading.Thread(target=interval_flush, args=('1M',))
+    # init_session_from_cmd()
+    initdb()
+
+    backend = threading.Thread(target=interval_flush, args=(options.interval,))
     backend.daemon = True
     backend.start()
 

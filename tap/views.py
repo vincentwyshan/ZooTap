@@ -499,6 +499,19 @@ class Management(object):
             return render_to_response("templates/api_release.html", context,
                                       request=self.request)
 
+    @view_config(route_name="api_release_version", permission="view")
+    def api_release_version(self):
+        release_id = self.request.matchdict['release_id']
+        with transaction.manager:
+            release = DBSession.query(TapApiRelease).get(release_id)
+            release = json.loads(release.content)
+            release = dict2api(release)
+
+            context = dict(pagename=u"", api=release)
+            context.update(common_vars(self.request))
+            return render_to_response("templates/api/api_release_version.html",
+                                      context, request=self.request)
+
     @view_config(route_name="client_home", permission="view")
     def client_home(self):
         with transaction.manager:
