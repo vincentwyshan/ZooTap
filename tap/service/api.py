@@ -309,10 +309,9 @@ class Program(object):
         return source, tuple(paras)
 
     def run(self, paras):
-        client_id = ''
         stats = dict(api_id=str(self.config.id),
                      project_id=str(self.config.project_id),
-                     client_id=client_id)
+                     client_id='')
         with measure() as time_used:
             try:
                 if self.config.auth_type == 'AUTH':
