@@ -132,4 +132,4 @@ def main_service(global_config, **settings):
     return config.make_wsgi_app()
 
 
-__version__ = '0.3.6'
+__version__ = '0.3.7'
