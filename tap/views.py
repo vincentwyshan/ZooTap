@@ -614,95 +614,100 @@ class Management(object):
 
     @view_config(route_name="api_test", permission="view")
     def api_test(self):
-        params = dict(self.request.params)
+        with transaction.manager:
+            params = dict(self.request.params)
 
-        api_id = params['id']
-        api = DBSession.query(TapApi).get(int(api_id))
-        from_cfgpage = False # 从api_config 页面提交
-        if 'dbconn_secondary' in params and 'source_type' in params:
-            from_cfgpage = True
-            dbconn_idlist = params['dbconn']
-            dbconn = []
-            for _id in dbconn_idlist.split(','):
-                if not _id:
-                    continue
-                conn = DBSession.query(TapDBConn).get(_id)
-                dbconn.append(dict(
-                    id=conn.id, name=conn.name, dbtype=conn.dbtype,
-                    connstring=conn.connstring, options=conn.options
-                ))
-            dbconn_secondary = []
-            for _id in params['dbconn_secondary'].split(','):
-                if not _id:
-                    continue
-                conn = DBSession.query(TapDBConn).get(_id)
-                dbconn_secondary.append(dict(
-                    id=conn.id, name=conn.name, dbtype=conn.dbtype,
-                    connstring=conn.connstring, options=conn.options
-                ))
-            config = dict(
-                id=api_id, name=params.get('name'), cnname=params.get('cnname'),
-                description=params.get('description'), cache_time=0,
-                writable=bool(int(params.get('writable'))), auth_type='OPEN',
-                project_id=api.project_id, paras=[],
-                project=dict(
-                    name=api.project.name
-                ),
-                dbconn=dbconn,
-                dbconn_ratio=params.get('dbconn_ratio'),
-                dbconn_secondary=dbconn_secondary,
-                source=dict(
-                    id=-1, source=params['source'],
-                    source_type=params['source_type']
+            api_id = params['id']
+            api = DBSession.query(TapApi).get(int(api_id))
+            from_cfgpage = False # 从api_config 页面提交
+            if 'dbconn_secondary' in params and 'source_type' in params:
+                from_cfgpage = True
+                dbconn_idlist = params['dbconn']
+                dbconn = []
+                for _id in dbconn_idlist.split(','):
+                    if not _id:
+                        continue
+                    conn = DBSession.query(TapDBConn).get(_id)
+                    dbconn.append(dict(
+                        id=conn.id, name=conn.name, dbtype=conn.dbtype,
+                        connstring=conn.connstring, options=conn.options
+                    ))
+                dbconn_secondary = []
+                for _id in params['dbconn_secondary'].split(','):
+                    if not _id:
+                        continue
+                    conn = DBSession.query(TapDBConn).get(_id)
+                    dbconn_secondary.append(dict(
+                        id=conn.id, name=conn.name, dbtype=conn.dbtype,
+                        connstring=conn.connstring, options=conn.options
+                    ))
+                config = dict(
+                    id=api_id, name=params.get('name'),
+                    cnname=params.get('cnname'),
+                    description=params.get('description'), cache_time=0,
+                    writable=bool(int(params.get('writable'))),
+                    auth_type='OPEN',
+                    project_id=api.project_id, paras=[],
+                    project=dict(
+                        name=api.project.name
+                    ),
+                    dbconn=dbconn,
+                    dbconn_ratio=params.get('dbconn_ratio'),
+                    dbconn_secondary=dbconn_secondary,
+                    source=dict(
+                        id=-1, source=params['source'],
+                        source_type=params['source_type']
+                    )
                 )
-            )
-            paras = {}
-            for k, v in params.items():
-                splits = k.split('-')
-                if not k.startswith('para') and not len(splits) == 3:
-                    continue
-                name, _id = splits[1], splits[2]
-                if not _id.isdigit():
-                    continue
-                if _id not in paras:
-                    paras[_id] = {}
-                paras[_id][name] = v
-            for para in paras.values():
-                config['paras'].append(dict(
-                    name=para[u'name'], val_type=para[u'val_type'],
-                    default=para[u'default'], absent_type=para[u'absent_type']
-                ))
-            config = dict2api(config)
-        else:
-            config = api2dict(api)
-            config = dict2api(config)
-
-        config.cache_time = 0
-        config.auth_type = 'OPEN'
-
-        paras = {}
-        for para in config.paras:
-            if para.name in params and from_cfgpage == False:
-                paras[para.name] = params[para.name]
+                paras = {}
+                for k, v in params.items():
+                    splits = k.split('-')
+                    if not k.startswith('para') and not len(splits) == 3:
+                        continue
+                    name, _id = splits[1], splits[2]
+                    if not _id.isdigit():
+                        continue
+                    if _id not in paras:
+                        paras[_id] = {}
+                    paras[_id][name] = v
+                for para in paras.values():
+                    config['paras'].append(dict(
+                        name=para[u'name'], val_type=para[u'val_type'],
+                        default=para[u'default'],
+                        absent_type=para[u'absent_type']
+                    ))
+                config = dict2api(config)
             else:
-                paras[para.name] = para.default
+                config = api2dict(api)
+                config = dict2api(config)
 
-        try:
-            result = Program(config, None).run(paras)
-            result_json = json.dumps(result, cls=CadaEncoder)
+            config.cache_time = 0
+            config.auth_type = 'OPEN'
 
-            context = dict(result=result, config=config, paras=paras,
-                           result_json=result_json)
+            paras = {}
+            for para in config.paras:
+                if para.name in params and from_cfgpage == False:
+                    paras[para.name] = params[para.name]
+                else:
+                    paras[para.name] = para.default
 
-            return render_to_response("templates/api_test.html", context,
-                                      request=self.request)
-        except Exception, e:
-            import traceback
-            msg = str(e)
-            trace = traceback.format_exc()
-            return Response(('<div class="alert alert-danger">%s</div><pre '
-                             'style="border-radius:0px">%s</pre>')
-                            % (msg, trace))
+            try:
+                result = Program(config, None).run(paras)
+                result_json = json.dumps(result, cls=CadaEncoder)
+
+                context = dict(result=result, config=config, paras=paras,
+                               result_json=result_json)
+
+                return render_to_response("templates/api_test.html", context,
+                                          request=self.request)
+            except Exception as e:
+                import traceback
+                msg = str(e)
+                trace = traceback.format_exc()
+                return Response(
+                    ('<div class="alert alert-danger">%s</div><pre '
+                     'style="border-radius:0px">%s</pre>') % (msg, trace)
+                )
 
 
 class ChartsGen(object):
@@ -956,3 +961,4 @@ class WidgetExcel(object):
             response = Response(json.dumps(result))
             response.content_type = "application/json"
             return response
+
