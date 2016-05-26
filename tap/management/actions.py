@@ -783,6 +783,7 @@ class Action(object):
 
 def name_valid(name):
     assert name not in ('', None)
+    name = name.replace('.', '')
     name = re.sub(ur'\w', '', name)
     assert name == u'', '包含非法字符: %s' % name.encode('utf8')
 
