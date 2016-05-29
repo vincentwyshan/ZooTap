@@ -188,7 +188,7 @@ class TapSource(Base):
                               convert_unicode=True), default=u"SQL")
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now, nullable=False)
-Index('tap_source_apiid', TapSource.api_id)
+Index('tap_source_apiid', TapSource.api_id, unique=True)
 
 
 # api 固定配置
