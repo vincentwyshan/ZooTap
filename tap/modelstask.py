@@ -186,3 +186,7 @@ class TapTaskHostHistory(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
 Index('tap_task_hosthistory', TapTaskHostHistory.host_id,
       TapTaskHostHistory.created)
+
+
+class TapTaskJobAssignment(Base):
+    pass
