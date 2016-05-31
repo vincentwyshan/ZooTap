@@ -1,8 +1,51 @@
 namespace py tap.servicedef
 
+exception TapError {
+  1: string err_code,
+  2: string err_message
+}
 
 service TapService
 {
     void ping(),
     oneway void report(1: map<string, string> params)
 }
+
+
+service TapTaskMaster
+{
+    void ping(),
+
+    /* return host_id */
+    i32 host_register (
+        1:string ip_address,
+        2:string node_name,
+        3:string sys_name,
+        4:string release,
+        5:string version,
+        6:string machine,
+        7:i32 cpu_count,
+        8:i64 memory_total,
+        9:optional string old_ip_address,
+        10:optional string old_node_name
+    ) throws (1:TapError error),
+
+    void worker_status (
+        1:i32 host_id,
+        2:double load_average,
+        3:i64 disk_remain,
+        4:double percent_cpu,
+        5:double percent_memory,
+        6:i64 network_sent,
+        7:i64 network_recv
+    ) throws (1:TapError error),
+
+
+}
+
+/*
+service TapTaskWorker
+{
+    void ping()
+}
+*/
