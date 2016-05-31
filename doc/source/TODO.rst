@@ -1,4 +1,5 @@
 
++ i18n support and english documentation
 + Schedule Task design
 + Add bilingual support
 + User profile page
