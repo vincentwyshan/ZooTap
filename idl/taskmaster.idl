@@ -1,8 +1,0 @@
-namespace py tap.servicedef
-
-
-service TapService
-{
-    void ping(),
-    oneway void report(1: map<string, string> params)
-}

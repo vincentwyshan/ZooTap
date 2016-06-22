@@ -22,10 +22,11 @@ class Iface:
   def ping(self):
     pass
 
-  def report(self, params):
+  def log_retrieve(self, job_id, line_number):
     """
     Parameters:
-     - params
+     - job_id
+     - line_number
     """
     pass
 
@@ -61,27 +62,48 @@ class Client(Iface):
     iprot.readMessageEnd()
     return
 
-  def report(self, params):
+  def log_retrieve(self, job_id, line_number):
     """
     Parameters:
-     - params
+     - job_id
+     - line_number
     """
-    self.send_report(params)
+    self.send_log_retrieve(job_id, line_number)
+    return self.recv_log_retrieve()
 
-  def send_report(self, params):
-    self._oprot.writeMessageBegin('report', TMessageType.ONEWAY, self._seqid)
-    args = report_args()
-    args.params = params
+  def send_log_retrieve(self, job_id, line_number):
+    self._oprot.writeMessageBegin('log_retrieve', TMessageType.CALL, self._seqid)
+    args = log_retrieve_args()
+    args.job_id = job_id
+    args.line_number = line_number
     args.write(self._oprot)
     self._oprot.writeMessageEnd()
     self._oprot.trans.flush()
+
+  def recv_log_retrieve(self):
+    iprot = self._iprot
+    (fname, mtype, rseqid) = iprot.readMessageBegin()
+    if mtype == TMessageType.EXCEPTION:
+      x = TApplicationException()
+      x.read(iprot)
+      iprot.readMessageEnd()
+      raise x
+    result = log_retrieve_result()
+    result.read(iprot)
+    iprot.readMessageEnd()
+    if result.success is not None:
+      return result.success
+    if result.error is not None:
+      raise result.error
+    raise TApplicationException(TApplicationException.MISSING_RESULT, "log_retrieve failed: unknown result")
+
 
 class Processor(Iface, TProcessor):
   def __init__(self, handler):
     self._handler = handler
     self._processMap = {}
     self._processMap["ping"] = Processor.process_ping
-    self._processMap["report"] = Processor.process_report
+    self._processMap["log_retrieve"] = Processor.process_log_retrieve
 
   def process(self, iprot, oprot):
     (name, type, seqid) = iprot.readMessageBegin()
@@ -117,17 +139,27 @@ class Processor(Iface, TProcessor):
     oprot.writeMessageEnd()
     oprot.trans.flush()
 
-  def process_report(self, seqid, iprot, oprot):
-    args = report_args()
+  def process_log_retrieve(self, seqid, iprot, oprot):
+    args = log_retrieve_args()
     args.read(iprot)
     iprot.readMessageEnd()
+    result = log_retrieve_result()
     try:
-      self._handler.report(args.params)
+      result.success = self._handler.log_retrieve(args.job_id, args.line_number)
       msg_type = TMessageType.REPLY
     except (TTransport.TTransportException, KeyboardInterrupt, SystemExit):
       raise
-    except:
-      pass
+    except TapError as error:
+      msg_type = TMessageType.REPLY
+      result.error = error
+    except Exception as ex:
+      msg_type = TMessageType.EXCEPTION
+      logging.exception(ex)
+      result = TApplicationException(TApplicationException.INTERNAL_ERROR, 'Internal error')
+    oprot.writeMessageBegin("log_retrieve", msg_type, seqid)
+    result.write(oprot)
+    oprot.writeMessageEnd()
+    oprot.trans.flush()
 
 
 # HELPER FUNCTIONS AND STRUCTURES
@@ -224,19 +256,22 @@ class ping_result:
   def __ne__(self, other):
     return not (self == other)
 
-class report_args:
+class log_retrieve_args:
   """
   Attributes:
-   - params
+   - job_id
+   - line_number
   """
 
   thrift_spec = (
     None, # 0
-    (1, TType.MAP, 'params', (TType.STRING,None,TType.STRING,None), None, ), # 1
+    (1, TType.I32, 'job_id', None, None, ), # 1
+    (2, TType.I32, 'line_number', None, None, ), # 2
   )
 
-  def __init__(self, params=None,):
-    self.params = params
+  def __init__(self, job_id=None, line_number=None,):
+    self.job_id = job_id
+    self.line_number = line_number
 
   def read(self, iprot):
     if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
@@ -248,14 +283,13 @@ class report_args:
       if ftype == TType.STOP:
         break
       if fid == 1:
-        if ftype == TType.MAP:
-          self.params = {}
-          (_ktype1, _vtype2, _size0 ) = iprot.readMapBegin()
-          for _i4 in xrange(_size0):
-            _key5 = iprot.readString()
-            _val6 = iprot.readString()
-            self.params[_key5] = _val6
-          iprot.readMapEnd()
+        if ftype == TType.I32:
+          self.job_id = iprot.readI32()
+        else:
+          iprot.skip(ftype)
+      elif fid == 2:
+        if ftype == TType.I32:
+          self.line_number = iprot.readI32()
         else:
           iprot.skip(ftype)
       else:
@@ -267,14 +301,14 @@ class report_args:
     if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
       oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
       return
-    oprot.writeStructBegin('report_args')
-    if self.params is not None:
-      oprot.writeFieldBegin('params', TType.MAP, 1)
-      oprot.writeMapBegin(TType.STRING, TType.STRING, len(self.params))
-      for kiter7,viter8 in self.params.items():
-        oprot.writeString(kiter7)
-        oprot.writeString(viter8)
-      oprot.writeMapEnd()
+    oprot.writeStructBegin('log_retrieve_args')
+    if self.job_id is not None:
+      oprot.writeFieldBegin('job_id', TType.I32, 1)
+      oprot.writeI32(self.job_id)
+      oprot.writeFieldEnd()
+    if self.line_number is not None:
+      oprot.writeFieldBegin('line_number', TType.I32, 2)
+      oprot.writeI32(self.line_number)
       oprot.writeFieldEnd()
     oprot.writeFieldStop()
     oprot.writeStructEnd()
@@ -285,7 +319,95 @@ class report_args:
 
   def __hash__(self):
     value = 17
-    value = (value * 31) ^ hash(self.params)
+    value = (value * 31) ^ hash(self.job_id)
+    value = (value * 31) ^ hash(self.line_number)
+    return value
+
+  def __repr__(self):
+    L = ['%s=%r' % (key, value)
+      for key, value in self.__dict__.iteritems()]
+    return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+  def __eq__(self, other):
+    return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+  def __ne__(self, other):
+    return not (self == other)
+
+class log_retrieve_result:
+  """
+  Attributes:
+   - success
+   - error
+  """
+
+  thrift_spec = (
+    (0, TType.LIST, 'success', (TType.STRUCT,(LogEntry, LogEntry.thrift_spec)), None, ), # 0
+    (1, TType.STRUCT, 'error', (TapError, TapError.thrift_spec), None, ), # 1
+  )
+
+  def __init__(self, success=None, error=None,):
+    self.success = success
+    self.error = error
+
+  def read(self, iprot):
+    if iprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None and fastbinary is not None:
+      fastbinary.decode_binary(self, iprot.trans, (self.__class__, self.thrift_spec))
+      return
+    iprot.readStructBegin()
+    while True:
+      (fname, ftype, fid) = iprot.readFieldBegin()
+      if ftype == TType.STOP:
+        break
+      if fid == 0:
+        if ftype == TType.LIST:
+          self.success = []
+          (_etype21, _size18) = iprot.readListBegin()
+          for _i22 in xrange(_size18):
+            _elem23 = LogEntry()
+            _elem23.read(iprot)
+            self.success.append(_elem23)
+          iprot.readListEnd()
+        else:
+          iprot.skip(ftype)
+      elif fid == 1:
+        if ftype == TType.STRUCT:
+          self.error = TapError()
+          self.error.read(iprot)
+        else:
+          iprot.skip(ftype)
+      else:
+        iprot.skip(ftype)
+      iprot.readFieldEnd()
+    iprot.readStructEnd()
+
+  def write(self, oprot):
+    if oprot.__class__ == TBinaryProtocol.TBinaryProtocolAccelerated and self.thrift_spec is not None and fastbinary is not None:
+      oprot.trans.write(fastbinary.encode_binary(self, (self.__class__, self.thrift_spec)))
+      return
+    oprot.writeStructBegin('log_retrieve_result')
+    if self.success is not None:
+      oprot.writeFieldBegin('success', TType.LIST, 0)
+      oprot.writeListBegin(TType.STRUCT, len(self.success))
+      for iter24 in self.success:
+        iter24.write(oprot)
+      oprot.writeListEnd()
+      oprot.writeFieldEnd()
+    if self.error is not None:
+      oprot.writeFieldBegin('error', TType.STRUCT, 1)
+      self.error.write(oprot)
+      oprot.writeFieldEnd()
+    oprot.writeFieldStop()
+    oprot.writeStructEnd()
+
+  def validate(self):
+    return
+
+
+  def __hash__(self):
+    value = 17
+    value = (value * 31) ^ hash(self.success)
+    value = (value * 31) ^ hash(self.error)
     return value
 
   def __repr__(self):
