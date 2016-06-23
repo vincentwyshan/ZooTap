@@ -5,24 +5,21 @@ from __future__ import division
 import time
 import copy
 import datetime
-import socket
 import warnings
 import threading
-from functools import wraps
 from optparse import OptionParser
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
-from thrift.transport.TTransport import TTransportException
-from thrift.Thrift import TApplicationException
 
 import transaction
 
 from tap.servicedef import TapService
-from tap.scripts import init_session_from_cmd
+# from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
+from tap.common.thrifthelper import client_ensure
 from tap.models import (
     DBSession,
     TapApi,
@@ -53,6 +50,7 @@ STATS_EXC = {}
 # }
 
 # COUNTER = 0
+
 
 class Handler(object):
     def ping(self):
@@ -317,28 +315,6 @@ def _interval_flush(ivalue):
         print '[%s:%s]' % (ivalue, now), 'time points left:', len(_oneday),\
               ', ' 'wake up: %s[%s]' % (time_awake, interval)
         time.sleep(interval)
-
-
-def client_ensure(func):
-    """
-    this wraper make sure initialize a new client when connect thrift server
-    failed. wraped thrift Client must have a _newclient function to initialize
-    transport connection.
-    """
-    @wraps(func)
-    def wraper(*kargs, **kwarg):
-        try:
-            return func(*kargs, **kwarg)
-        except (TTransportException, TApplicationException, socket.error):
-            self = kargs[0]
-            self._newclient()
-        except BaseException as e:
-            # print e
-            import traceback
-            traceback.print_exc()
-            self = kargs[0]
-            self._newclient()
-    return wraper
 
 
 PORT = 10101

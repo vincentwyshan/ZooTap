@@ -24,8 +24,8 @@ class TapTask(Base):
     description = Column(UnicodeText)
     dependencies = Column(UnicodeText)  # shell scripts to install dependencies
     os_require = Column(
-        Enum('LINUX', 'MAC', 'WINDOWS', name="t_os_type", convert_unicode=True),
-        default='LINUX')
+        Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
+             convert_unicode=True), default='LINUX')
 
     project_id = Column(Integer, ForeignKey('tap_taskproject.id'))
     project = relationship('TapTaskProject', backref="tasks")
@@ -158,7 +158,7 @@ class TapTaskHost(Base):
     network_sent = Column(Integer)  # bytes
     network_recv = Column(Integer)  # bytes
 
-    report_time = Column(DateTime)  # host active judge
+    report_time = Column(DateTime)  # host last active time
 
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
@@ -174,7 +174,7 @@ class TapTaskHostHistory(Base):
     __tablename__ = 'tap_taskhost_history'
     id = Column(Integer, Sequence('seq_tthost_history_id'), primary_key=True)
     host_id = Column(Integer, ForeignKey('tap_task_host.id'))
-    task = relationship(TapTaskHost, backref=backref('histories'))
+    host = relationship(TapTaskHost, backref=backref('histories'))
 
     load_average = Column(Float)
     disk_remain = Column(Integer)
