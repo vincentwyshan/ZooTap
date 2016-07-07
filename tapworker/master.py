@@ -17,13 +17,15 @@ from thrift.server import TServer
 import transaction
 
 from tap.servicedef import TapTaskMaster
+from tap.servicedef.ttypes import TapError
 # from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
 from tap.common.thrifthelper import client_ensure
 from tap.models import DBSession
 from tap.modelstask import (
     TapTask,
-    TapTaskProject,
+    TapTaskStatus,
+    TapTaskJobAssignment,
     TapTaskHost,
     TapTaskHostHistory,
 )
@@ -31,24 +33,24 @@ from tap.modelstask import (
 PORT = 10102
 
 
+def error_handle(func):
+    def wraper(*kargs, **kwargs):
+        try:
+            return func(*kargs, **kwargs)
+        except BaseException as e:
+            import traceback
+            message = traceback.format_exc()
+            return TapError(err_message=message)
+    return wraper
+
+
 class Handler(object):
     def ping(self):
         pass
 
-    #  i32 host_register (
-    #     1:string ip_address,
-    #     2:string node_name,
-    #     3:string sys_name,
-    #     4:string release,
-    #     5:string version,
-    #     6:string machine,
-    #     7:i32 cpu_count,
-    #     8:i64 memory_total,
-    #     9:string old_ip_address,
-    #     10:string old_node_name
-    # ) throws (1:TapError error),
-    def host_register(self, ip_address, node_name, sys_name, release,
-                      version, machine, cpu_count, memory_total,
+    @error_handle
+    def host_register(self, ip_address, listen_port, node_name, sys_name,
+                      release, version, machine, cpu_count, memory_total,
                       old_ip_address, old_node_name):
         """
         Register a host. Host only can be deleted by manually operation.
@@ -78,10 +80,11 @@ class Handler(object):
                     ip_address=ip_address, node_name=node_name,
                     sys_name=sys_name, release=release, version=version,
                     machine=machine, cpu_count=cpu_count,
-                    memory_total=memory_total)
+                    memory_total=memory_total, listen_port=listen_port)
                 DBSession.add(host)
             else:
                 host.ip_address = ip_address
+                host.listen_port = listen_port
                 host.node_name = node_name
                 host.sys_name = sys_name
                 host.release = release
@@ -92,16 +95,7 @@ class Handler(object):
             DBSession.flush()
             return host.id
 
-    # void host_status (
-    #     1:i32 host_id,
-    #     2:double load_average,
-    #     3:i64 disk_remain,
-    #     4:double percent_cpu,
-    #     5:double percent_memory,
-    #     6:i64 network_sent,
-    #     7:i64 network_recv
-    # ) throws (1:TapError error),
-
+    @error_handle
     def host_status(self, host_id, load_average, disk_remain, percent_cpu,
                     percent_memory, network_sent, network_recv):
         """
@@ -133,12 +127,18 @@ class Handler(object):
             DBSession.add(history)
 
     # map<string, string> job_request(1:i32 host_id) throws (1: TapError error),
+    @error_handle
     def job_request(self, host_id):
         """
         Assign a job to a host
         :param host_id:
         :return:
         """
+        # generate job
+        # check timestamp
+        key = 'timestamp.task.loop'
+        DBSession.query(TapTaskStatus)
+        # assign job
 
     # void job_start (1:i32 host_id, 2:i32 job_id),
     def job_start(self, host_id, job_id):

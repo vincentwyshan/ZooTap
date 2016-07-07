@@ -22,6 +22,7 @@ requires = [
     'celery==3.1.20',
     'captcha',
     'psutil',
+    'croniter',
     ]
 if sys.version_info < (2, 7):
     requires.append('ordereddict')

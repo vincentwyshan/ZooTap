@@ -20,9 +20,12 @@ class TapTask(Base):
     id = Column(Integer, Sequence('seq_ttask_id'), primary_key=True)
     name = Column(Unicode(60), nullable=False)
     cron = Column(Unicode(20))  # cron expression
+
     variables = Column(Integer)  # environment variables
+
     description = Column(UnicodeText)
     dependencies = Column(UnicodeText)  # shell scripts to install dependencies
+
     os_require = Column(
         Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
              convert_unicode=True), default='LINUX')
@@ -37,10 +40,16 @@ class TapTask(Base):
 
     alert_emails = Column(UnicodeText)  # email list, split by comma
 
+    host_id = Column(Integer, ForeignKey("tap_taskhost.id"), nullable=True)
+    host = relationship('TapTaskHost', backref="tasks")
+
+    disable = Column(Boolean, default=False)
+
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
 Index('tap_task_p_id_name', TapTask.project_id, TapTask.name, unique=True)
+Index('tap_task_disable', TapTask.disable)
 
 
 class TapTaskProject(Base):
@@ -143,6 +152,7 @@ class TapTaskHost(Base):
              convert_unicode=True), default='LINUX')
 
     ip_address = Column(Unicode(64))
+    listen_port = Column(Integer)
     sys_name = Column(Unicode(20))
     node_name = Column(Unicode(60))
     release = Column(Unicode(25))
@@ -189,4 +199,41 @@ Index('tap_task_hosthistory', TapTaskHostHistory.host_id,
 
 
 class TapTaskJobAssignment(Base):
-    pass
+    __tablename__ = 'tap_task_jobassignments'
+    id = Column(Integer, Sequence('seq_ttjob_assign_id'), primary_key=True)
+
+    task_id = Column(Integer, ForeignKey('tap_task.id'))
+    task = relationship(TapTask, backref=backref('jobs'))
+
+    host_id = Column(Integer, ForeignKey('tap_task_host.id'))
+    host = relationship(TapTaskHost, backref=backref('histories'))
+
+    is_failed = Column(Boolean, default=None, nullable=True)
+    log_path = Column(UnicodeText, nullable=False)  # hostId://path
+
+    time_start = Column(DateTime, nullable=False)
+    time_end = Column(DateTime, nullable=True)
+
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now,
+                       onupdate=datetime.datetime.now, nullable=False)
+Index('tap_task_jobassign_tid', TapTaskJobAssignment.task_id)
+
+
+class TapTaskStatus(Base):
+    """
+    Store status by key-value
+    """
+    __tablename__ = 'tap_task_status'
+    id = Column(Integer, Sequence('seq_tt_status_id'), primary_key=True)
+
+    key = Column(Unicode(128))
+    value = Column(UnicodeText)
+    expire = DateTime(DateTime)
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now,
+                       onupdate=datetime.datetime.now, nullable=False)
+Index('tap_task_status_key', TapTaskStatus.key, unique=True)
+
+
+

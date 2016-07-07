@@ -19,6 +19,7 @@ service TapTaskMaster
     /* return host_id */
     i32 host_register (
         1:string ip_address,
+        11:string listen_port,
         2:string node_name,
         3:string sys_name,
         4:string release,
