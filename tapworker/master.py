@@ -2,18 +2,18 @@
 
 from __future__ import division
 
-import time
-import copy
+import os
 import datetime
-import warnings
-import threading
 from optparse import OptionParser
+
+import simplejson as json
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
+from sqlalchemy import desc
 import transaction
 
 from tap.servicedef import TapTaskMaster
@@ -26,8 +26,10 @@ from tap.modelstask import (
     TapTask,
     TapTaskStatus,
     TapTaskJobAssignment,
+    TapTaskJobHistory,
     TapTaskHost,
     TapTaskHostHistory,
+    TapTaskExecutable,
 )
 
 PORT = 10102
@@ -51,7 +53,8 @@ class Handler(object):
     @error_handle
     def host_register(self, ip_address, listen_port, node_name, sys_name,
                       release, version, machine, cpu_count, memory_total,
-                      old_ip_address, old_node_name):
+                      old_ip_address, old_node_name, directory,
+                      software_requirements):
         """
         Register a host. Host only can be deleted by manually operation.
         ip_address and node_name are the unique constraint, old_ip_address
@@ -68,6 +71,8 @@ class Handler(object):
         :param memory_total:
         :param old_ip_address:
         :param old_node_name:
+        :param directory: the directory for storing logs and temporary files
+        :param software_requirements: see TapTaskHost.ver_*
         :return:
         """
         with transaction.manager:
@@ -76,22 +81,28 @@ class Handler(object):
                     ip_address=old_ip_address, node_name=old_node_name).first()
 
             if not host:
-                host = TapTaskHost(
-                    ip_address=ip_address, node_name=node_name,
-                    sys_name=sys_name, release=release, version=version,
-                    machine=machine, cpu_count=cpu_count,
-                    memory_total=memory_total, listen_port=listen_port)
+                host = TapTaskHost()
                 DBSession.add(host)
-            else:
-                host.ip_address = ip_address
-                host.listen_port = listen_port
-                host.node_name = node_name
-                host.sys_name = sys_name
-                host.release = release
-                host.version = version
-                host.machine = machine
-                host.cpu_count = cpu_count
-                host.memory_total = memory_total
+            host.ip_address = ip_address
+            host.listen_port = listen_port
+            host.node_name = node_name
+            host.sys_name = sys_name
+            host.release = release
+            host.version = version
+            host.machine = machine
+            host.cpu_count = cpu_count
+            host.memory_total = memory_total
+            host.version = version
+            host.directory = directory
+
+            # host.software_requirements = software_requirements
+            host.os_type = software_requirements['os_type']
+            host.ver_python = software_requirements['ver_python']
+            host.ver_java = software_requirements['ver_java']
+            host.ver_dotnet = software_requirements['ver_dotnet']
+            host.ver_php = software_requirements['ver_php']
+            host.ver_node = software_requirements['ver_node']
+
             DBSession.flush()
             return host.id
 
@@ -126,30 +137,168 @@ class Handler(object):
             )
             DBSession.add(history)
 
-    # map<string, string> job_request(1:i32 host_id) throws (1: TapError error),
     @error_handle
     def job_request(self, host_id):
         """
         Assign a job to a host
         :param host_id:
+        :return: {job_id, start_time, task_name, task_variables,
+                 task_dependencies, task_scripts, task_executables}
+        """
+        # query job
+        now = datetime.datetime.now()
+        with transaction.manager:
+            jobs = DBSession.query(TapTaskJobAssignment) \
+                .filter(TapTaskJobAssignment.host_id == host_id,
+                        TapTaskJobAssignment.time_start > now)
+
+            result = []
+            for job in jobs:
+                _job = {}
+                # TODO
+                _job['job_id'] = str(job.id)
+                _job['start_time'] = job.start_time.strftime('%Y-%d-%m %H:%M:%S')
+                _job['task_name'] = job.task.name.encode("utf8")
+                _job['task_variables'] = job.task.variables.encode('utf8')
+                _job['task_dependencies'] = job.task.dependencies.encode('utf8')
+                task_scripts = [(r.script_type, r.script) for r in
+                                job.task.runnables]
+                _job['task_scripts'] = json.dumps(task_scripts)
+                task_executables = [(e.name, e.md5) for e in
+                                    job.task.executables]
+                _job['task_executables'] = json.dumps(task_executables)
+                result.append(_job)
+            return result
+
+    @error_handle
+    def job_start(self, host_id, job_id, start_time):
+        """
+        record job start time
+        :param host_id:
+        :param job_id:
+        :param start_time:
         :return:
         """
-        # generate job
-        # check timestamp
-        key = 'timestamp.task.loop'
-        DBSession.query(TapTaskStatus)
-        # assign job
+        with transaction.manager:
+            job = DBSession.query(TapTaskJobAssignment).get(job_id)
+            start_time = datetime.datetime.strptime(
+                start_time, '%y-%m%d %H:%M:%s')
+            job.time_start1 = start_time
+            history = DBSession.query(TapTaskJobHistory).filter(
+                task_id=job.task_id, host_id=host_id
+            ).order_by(desc(TapTaskJobHistory.id)).first()
+            history.time_start1 = start_time
 
-    # void job_start (1:i32 host_id, 2:i32 job_id),
-    def job_start(self, host_id, job_id):
-        pass
+    @error_handle
+    def job_done(self, host_id, job_id, end_time, success, message):
+        """
+        Record job end time
+        :param host_id:
+        :param job_id:
+        :param end_time:
+        :param success:
+        :param elapse:
+        :param message:
+        :return:
+        """
+        with transaction.manager:
+            job = DBSession.query(TapTaskJobAssignment).get(job_id)
+            end_time = datetime.datetime.strptime(
+                end_time, '%y-%m%d %H:%M:%s')
+            job.time_end = end_time
+            job.is_failed = (not success)
+            history = DBSession.query(TapTaskJobHistory).filter(
+                task_id=job.task_id, host_id=host_id
+            ).order_by(desc(TapTaskJobHistory.id)).first()
+            history.time_end = end_time
+            history.is_failed = (not success)
 
-    # void job_done (1:i32 host_id, 2:i32 job_id,
-    #                3:bool success, 4:double elapse, 5:string message)
-    # }
-    def job_done(self, host_id, job_id, success, elapse, message):
-        pass
+    @error_handle
+    def executable_fetch(self, md5):
+        with transaction.manager:
+            exectable = DBSession.query(TapTaskExecutable).filter_by(
+                md5=md5).first()
+            return exectable.binary
 
+
+PORT = 10103
+
+
+class Client(object):
+    def __init__(self, host):
+        self.host = host
+        self.client = None
+        self.transport = None
+        self._newclient()
+
+    @client_ensure
+    def ping(self):
+        self.client.ping()
+
+    def _newclient(self):
+        transport = TSocket.TSocket(self.host, PORT)
+        # transport.setTimeout(1000*60*2)
+        # 超时最多两秒
+        transport.setTimeout(1000*2)
+        self.transport = TTransport.TBufferedTransport(transport)
+
+        # Wrap in a protocol
+        protocol = TBinaryProtocol.TBinaryProtocol(transport)
+
+        # Create a client to use the protocol encoder
+        self.client = TapTaskMaster.Client(protocol)
+
+        self.transport.open()
+
+    @client_ensure
+    def host_register(self, ip_address, listen_port, node_name, sys_name,
+                      release, version, machine, cpu_count, memory_total,
+                      old_ip_address, old_node_name, directory,
+                      software_requirements):
+        return self.client.host_register(
+            ip_address, listen_port, node_name, sys_name, release, version,
+            machine, cpu_count, memory_total, old_ip_address, old_node_name,
+            directory, software_requirements)
+
+    @client_ensure
+    def host_status(self, host_id, load_average, disk_remain, percent_cpu,
+                    percent_memory, network_sent, network_recv):
+        return self.client.host_status(
+            host_id, load_average, disk_remain, percent_cpu, percent_memory,
+            network_sent, network_recv
+        )
+
+    @client_ensure
+    def job_request(self, host_id):
+        return self.client.job_request(
+            host_id
+        )
+
+    @client_ensure
+    def job_start(self, host_id, job_id, start_time):
+        return self.client.job_start(
+            host_id, job_id, start_time
+        )
+
+    @client_ensure
+    def job_done(self, host_id, job_id, end_time, success, message):
+        return self.client.job_done(
+            host_id, job_id, end_time, success, message
+        )
+
+    @client_ensure
+    def executable_fetch(self, md5):
+        return self.client.executable_fetch(
+            md5
+        )
+
+    def close(self):
+        self.transport.close()
+
+
+def get_client():
+    host = os.environ.get('TAPWORKER_MASTERIP')
+    return Client(host)
 
 
 def run_server():

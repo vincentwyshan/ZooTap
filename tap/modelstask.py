@@ -3,7 +3,7 @@
 
 import datetime
 
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, deferred
 from sqlalchemy import (
     Column, Index, Integer, BigInteger, Unicode, UnicodeText, Boolean,
     ForeignKey, Enum, DateTime, LargeBinary, Float, Table, Sequence
@@ -15,20 +15,40 @@ from tap.models import (
 )
 
 
+ENUM_OS_TYPE = Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
+                    convert_unicode=True)
+ENUM_PYTHON_VER = Enum('ANY', 'LE2.5', '2.5', '2.6', '2.7', '3.0',
+                       name="t_python_ver", convert_unicode=True)
+ENUM_JAVA_VER = Enum('ANY', name="t_java_ver", convert_unicode=True)
+ENUM_DOTNET_VER = Enum('ANY', name="t_dotnet_ver", convert_unicode=True)
+ENUM_PERL_VER = Enum('ANY', name="t_perl_ver", convert_unicode=True)
+ENUM_NODE_VER = Enum('ANY', name="t_node_ver", convert_unicode=True)
+ENUM_PHP_VER = Enum('ANY', name="t_php_ver", convert_unicode=True)
+
+ENUM_SCRIPT_TYPE = Enum('SHELL', 'SQL', 'PYTHON', name="t_script_type",
+                        convert_unicode=True)
+
+
 class TapTask(Base):
     __tablename__ = 'tap_task'
     id = Column(Integer, Sequence('seq_ttask_id'), primary_key=True)
     name = Column(Unicode(60), nullable=False)
     cron = Column(Unicode(20))  # cron expression
 
-    variables = Column(Integer)  # environment variables
+    variables = Column(Integer)  # environment variables, json format
 
     description = Column(UnicodeText)
     dependencies = Column(UnicodeText)  # shell scripts to install dependencies
 
-    os_require = Column(
-        Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
-             convert_unicode=True), default='LINUX')
+    need_memory = Column(Integer)  # memory size need in MB
+
+    # ENUM TYPE can be multiple, split by comma
+    require_os = Column(Unicode(64), default='LINUX')
+    require_python = Column(Unicode(64), default=None)
+    require_java = Column(Unicode(64), default=None)
+    require_dotnet = Column(Unicode(64), default=None)
+    require_php = Column(Unicode(64), default=None)
+    require_node = Column(Unicode(64), default=None)
 
     project_id = Column(Integer, ForeignKey('tap_taskproject.id'))
     project = relationship('TapTaskProject', backref="tasks")
@@ -68,18 +88,17 @@ class TapTaskRunnable(Base):
     __tablename__ = 'tap_taskrunnable'
     id = Column(Integer, Sequence('seq_ttrunnable_id'), primary_key=True)
 
-    executable_id = Column(Integer, ForeignKey('tap_taskexecutable.id'))
-    executable = relationship('TapTaskExecutable',
-                              backref=backref('runnable', uselist=False))
+    # executable_id = Column(Integer, ForeignKey('tap_taskexecutable.id'))
+    # executable = relationship('TapTaskExecutable',
+    #                           backref=backref('runnable', uselist=False))
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
     task = relationship(TapTask, backref=backref('runnables', uselist=True))
 
+    # call executable $executable_name
     script = Column(UnicodeText)
-    script_type = Column(
-        Enum('SHELL', 'SQL', 'PYTHON', name="r_script_type",
-             convert_unicode=True),
-        default='SHELL')
+    script_type = Column(ENUM_SCRIPT_TYPE, default='SHELL')
+
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
@@ -92,7 +111,10 @@ class TapTaskExecutable(Base):
     id = Column(Integer, Sequence('seq_ttexecutable_id'), primary_key=True)
     name = Column(Unicode(50), nullable=False)
     md5 = Column(UnicodeText)
-    binary = Column(LargeBinary)
+    binary = deferred(Column(LargeBinary))
+
+    task_id = Column(Integer, ForeignKey('tap_task.id'))
+    task = relationship(TapTask, backref=backref('executables', uselist=True))
 
     uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
     user_create = relationship(TapUser, backref='projects_created')
@@ -147,9 +169,6 @@ Index('tap_task_stats_taskid', TapTaskStats.task_id, unique=True)
 class TapTaskHost(Base):
     __tablename__ = 'tap_taskhost'
     id = Column(Integer, Sequence('seq_tthost_id'), primary_key=True)
-    os_type = Column(
-        Enum('LINUX', 'MAC', 'WINDOWS', name="t_host_os_type",
-             convert_unicode=True), default='LINUX')
 
     ip_address = Column(Unicode(64))
     listen_port = Column(Integer)
@@ -161,6 +180,18 @@ class TapTaskHost(Base):
     cpu_count = Column(Integer)     # with psutil library
     memory_total = Column(Integer)  # bytes
 
+    # environment support
+    os_type = Column(ENUM_OS_TYPE, default='LINUX')
+    ver_python = Column(ENUM_PYTHON_VER, default=None)
+    ver_java = Column(ENUM_JAVA_VER, default=None)
+    ver_dotnet = Column(ENUM_DOTNET_VER, default=None)
+    ver_php = Column(ENUM_PHP_VER, default=None)
+    ver_node = Column(ENUM_NODE_VER, default=None)
+
+    # environment variables
+    directory = Column(Unicode(256))
+
+    # load stats
     load_average = Column(Float)
     disk_remain = Column(Integer)   # bytes
     percent_cpu = Column(Float)
@@ -178,6 +209,7 @@ class TapTaskHost(Base):
 # local storage, it can recovery from the information in storage when reconnect
 Index('tap_task_host', TapTaskHost.ip_address, TapTaskHost.node_name,
       unique=True)
+Index('tap_task_host_rtime', TapTaskHost.report_time)
 
 
 class TapTaskHostHistory(Base):
@@ -209,15 +241,41 @@ class TapTaskJobAssignment(Base):
     host = relationship(TapTaskHost, backref=backref('histories'))
 
     is_failed = Column(Boolean, default=None, nullable=True)
-    log_path = Column(UnicodeText, nullable=False)  # hostId://path
+    log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
 
-    time_start = Column(DateTime, nullable=False)
+    time_start = Column(DateTime, nullable=False)  # scheduled start time
+    time_start1 = Column(DateTime, nullable=True)  # real start time
     time_end = Column(DateTime, nullable=True)
 
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
-Index('tap_task_jobassign_tid', TapTaskJobAssignment.task_id)
+Index('tap_task_jobassign_tid', TapTaskJobAssignment.task_id, unique=True)
+Index('tap_task_jobhost_time', TapTaskJobAssignment.host_id,
+      TapTaskJobAssignment.time_start)
+
+
+class TapTaskJobHistory(Base):
+    __tablename__ = 'tap_task_jobhistory'
+    id = Column(Integer, Sequence('seq_ttjob_history_id'), primary_key=True)
+
+    task_id = Column(Integer, ForeignKey('tap_task.id'))
+    task = relationship(TapTask, backref=backref('jobs'))
+
+    host_id = Column(Integer, ForeignKey('tap_task_host.id'))
+    host = relationship(TapTaskHost, backref=backref('histories'))
+
+    is_failed = Column(Boolean, default=None, nullable=True)
+    log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
+
+    time_start = Column(DateTime, nullable=False)  # scheduled start time
+    time_start1 = Column(DateTime, nullable=True)  # real start time
+    time_end = Column(DateTime, nullable=True)
+
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now,
+                       onupdate=datetime.datetime.now, nullable=False)
+Index('tap_task_jobhis_tid', TapTaskJobHistory.task_id)
 
 
 class TapTaskStatus(Base):
