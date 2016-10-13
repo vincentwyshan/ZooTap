@@ -1,5 +1,5 @@
 #coding=utf8
-__author__ = 'cada'
+__author__ = 'Vincent.Wen'
 
 import sys
 from optparse import OptionParser

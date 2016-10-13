@@ -221,7 +221,7 @@ def cu(val, encoding=None):
         val = val.decode('gb18030', 'ignore')
     return val
 
-class CadaEncoder(json.JSONEncoder):
+class TapEncoder(json.JSONEncoder):
     def default(self, v):
         if isinstance(v, datetime.date):
             return str(v)

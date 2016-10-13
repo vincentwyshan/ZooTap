@@ -61,29 +61,29 @@
                                 <th>#</th>
 
                                 %if sort_field=='api-name' and sort_direction == 'asc':
-                                <th class="cada-sort cada-sort-asc">
+                                <th class="tap-sort tap-sort-asc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">API</a>
                                 </th>
                                 %elif sort_field=='api-name' and sort_direction == 'desc':
-                                <th class="cada-sort cada-sort-desc">
+                                <th class="tap-sort tap-sort-desc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">API</a>
                                 </th>
                                 %else:
-                                <th class="cada-sort">
+                                <th class="tap-sort">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-name'})}">API</a>
                                 </th>
                                 %endif
 
                                 %if sort_field=='api-cnname' and sort_direction == 'asc':
-                                <th class="cada-sort cada-sort-asc">
+                                <th class="tap-sort tap-sort-asc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">名称</a>
                                 </th>
                                 %elif sort_field=='api-cnname' and sort_direction == 'desc':
-                                <th class="cada-sort cada-sort-desc">
+                                <th class="tap-sort tap-sort-desc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">名称</a>
                                 </th>
                                 %else:
-                                <th class="cada-sort">
+                                <th class="tap-sort">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-cnname'})}">名称</a>
                                 </th>
                                 %endif
@@ -94,29 +94,29 @@
 
 
                                 %if sort_field=='api-created' and sort_direction == 'asc':
-                                <th class="cada-sort cada-sort-asc">
+                                <th class="tap-sort tap-sort-asc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">创建时间</a>
                                 </th>
                                 %elif sort_field=='api-created' and sort_direction == 'desc':
-                                <th class="cada-sort cada-sort-desc">
+                                <th class="tap-sort tap-sort-desc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">创建时间</a>
                                 </th>
                                 %else:
-                                <th class="cada-sort">
+                                <th class="tap-sort">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-created'})}">创建时间</a>
                                 </th>
                                 %endif
 
                                 %if sort_field=='api-timestamp' and sort_direction == 'asc':
-                                <th class="cada-sort cada-sort-asc">
+                                <th class="tap-sort tap-sort-asc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">修改时间</a>
                                 </th>
                                 %elif sort_field=='api-timestamp' and sort_direction == 'desc':
-                                <th class="cada-sort cada-sort-desc">
+                                <th class="tap-sort tap-sort-desc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">修改时间</a>
                                 </th>
                                 %else:
-                                <th class="cada-sort">
+                                <th class="tap-sort">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-timestamp'})}">修改时间</a>
                                 </th>
                                 %endif

@@ -22,7 +22,7 @@ from pyramid.paster import (
     )
 
 
-from tap.service.common import dict2api, api2dict, CadaEncoder
+from tap.service.common import dict2api, api2dict, TapEncoder
 from tap.models import (
     DBSession,
     Base,
@@ -165,4 +165,4 @@ def check_dbconn():
                 dbconn_secondary = config.dbconn_secondary
                 config.dbconn_secondary = [connections[c.id] for c in dbconn_secondary]
                 config = api2dict(config)
-                release.content = json.dumps(config, cls=CadaEncoder)
+                release.content = json.dumps(config, cls=TapEncoder)
