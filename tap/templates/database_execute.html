@@ -28,7 +28,7 @@ try{
         sScrollX: "100%",
         bScrollCollapse: true,
         "columns": [
-        %for title in (result['table'] or [[]])[0]:
+        %for title in (result['datatable'] or [[]])[0]:
             { "title": "${title}" },
         %endfor
         ],

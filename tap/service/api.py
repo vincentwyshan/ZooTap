@@ -57,7 +57,11 @@ from tap.models import (
 )
 
 
+# cache container
 SOURCES_CONTAINER = {}
+
+# debug signal
+TAP_DEBUGINFO = int(os.environ.get('TAP_DEBUGINFO', '0'))
 
 
 @view_config(route_name='api_run')
@@ -79,6 +83,8 @@ def main(request):
         result = Program(config, version).run(dict(request.params))
     except ApiAuthFail:
         result = dict(sys_status=403, sys_error="Auth Fail")
+    status = result['sys_status']
+    _tap_debuginfo(result)
     jresult = json.dumps(result, cls=TapEncoder)
     if 'jsonpCallback' in request.params:
         jsonp = request.params['jsonpCallback']
@@ -86,8 +92,29 @@ def main(request):
     response = Response(jresult,
                         headerlist=[('Access-Control-Allow-origin', '*',)])
     response.content_type = "application/json"
-    response.status = result['sys_status']
+    response.status = status
     return response
+
+
+def _tap_debuginfo(result):
+    """
+    Remove debug info depend on TAP_DEBUGINFO environ variables
+    :param result:
+    :return:
+    """
+    if TAP_DEBUGINFO:
+        return result
+
+    removed_keys = []
+    ignored_keys = ['sys_status']
+    for key in result.keys():
+        if key.startswith('sys_') and key not in ignored_keys:
+            removed_keys.append(key)
+
+    for key in removed_keys:
+        del result[key]
+
+    return result
 
 
 @cache_fn1(int(os.environ.get('TAP_API_RELOAD', 1800)))
@@ -404,7 +431,7 @@ class Program(object):
                                    for row in data]
             else:
                 result['datatable'] = []
-        elapse.append(['EXECUTION', time_total()])
+        elapse.append(['EXECUTION TOTAL', time_total()])
 
         result['sys_timestamp_exec'] = time.time()
 
@@ -446,10 +473,10 @@ class Program(object):
                 elapse.append(['ST.%s' % i, time_used()])
 
             if _last_cursor:
-                # 使用最后一个 cursor 获取最终数据
-                db_result = self.bind_result(_last_cursor, 'table', self._dbchoose,
+                # using the last cursor to get final data(datatable)
+                db_result = self.bind_result(_last_cursor, 'datatable', self._dbchoose,
                                              elapse)
-        elapse.append(['EXECUTION', time_total()])
+        elapse.append(['EXECUTION TOTAL', time_total()])
 
         result['datatable'] = db_result
         result['sys_elapse'] = elapse
@@ -458,17 +485,17 @@ class Program(object):
         return result
 
     def bind_result(self, cursor, name, dbtype, elapse):
-        result = []
-        if cursor.description:
-            with measure() as time_cu:
+        with measure() as time_cu:
+            result = []
+            if cursor.description:
                 rows = cursor.fetchall()
                 if rows:
                     rows = [[val_universal(v, dbtype) for v in row]
                             for row in rows]
-            elapse.append(['UNIVERSAL_CHR-%s' % name, time_cu()])
-            cols = [col[0] for col in cursor.description]
-            result.append(cols)
-            result.extend(rows)
+                cols = [col[0] for col in cursor.description]
+                result.append(cols)
+                result.extend(rows)
+        elapse.append(['UNIVERSAL_CHR-%s' % name, time_cu()])
         return result
 
     def run_stmt(self, stmt, paras, writable, charset, result, elapse):

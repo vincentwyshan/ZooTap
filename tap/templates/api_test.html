@@ -39,8 +39,8 @@
 var dataSet = ${result_json | n};
 
 var dataSetData = [];
-for(var i=1; i<dataSet['table'].length; i++){
-    dataSetData.push(dataSet['table'][i]);
+for(var i=1; i<dataSet['datatable'].length; i++){
+    dataSetData.push(dataSet['datatable'][i]);
 }
 
 try{
@@ -52,7 +52,7 @@ try{
         sScrollX: "100%",
         bScrollCollapse: true,
         "columns": [
-        %for title in (result['table'] or [[]])[0]:
+        %for title in (result['datatable'] or [[]])[0]:
             { "title": "${title}" },
         %endfor
         ],
