@@ -42,10 +42,10 @@ def main(argv=sys.argv):
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
     with transaction.manager:
-        password = encrypt_password("capitalvue")
-        user = DBSession.query(TapUser).filter_by(name=u'cada').first()
+        password = encrypt_password("admin")
+        user = DBSession.query(TapUser).filter_by(name=u'admin').first()
         if not user:
-            user = TapUser(name=u'cada', password=password, is_admin=True)
+            user = TapUser(name=u'admin', password=password, is_admin=True)
             DBSession.add(user)
             DBSession.flush()
         project = DBSession.query(TapProject).filter_by(name=u'PROJECT0').first()

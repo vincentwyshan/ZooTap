@@ -41,7 +41,7 @@ from tap.service.common import conn_get
 from tap.service.common import stmt_split
 from tap.service.common import measure
 from tap.service.common import dict2api
-from tap.service.common import CadaEncoder
+from tap.service.common import TapEncoder
 from tap.service.common import cu
 from tap.service.common import dbconn_ratio_parse
 from tap.service.interpreter import ParaHandler, CFNInterpreter
@@ -79,7 +79,7 @@ def main(request):
         result = Program(config, version).run(dict(request.params))
     except ApiAuthFail:
         result = dict(sys_status=403, sys_error="Auth Fail")
-    jresult = json.dumps(result, cls=CadaEncoder)
+    jresult = json.dumps(result, cls=TapEncoder)
     if 'jsonpCallback' in request.params:
         jsonp = request.params['jsonpCallback']
         jresult = jsonp + '(%s)' % jresult
@@ -400,10 +400,10 @@ class Program(object):
         with measure() as time_total:
             data = container['main']()
             if data:
-                result['table'] = [[val_universal(v, None) for v in row]
+                result['datatable'] = [[val_universal(v, None) for v in row]
                                    for row in data]
             else:
-                result['table'] = []
+                result['datatable'] = []
         elapse.append(['EXECUTION', time_total()])
 
         result['sys_timestamp_exec'] = time.time()
@@ -451,7 +451,7 @@ class Program(object):
                                              elapse)
         elapse.append(['EXECUTION', time_total()])
 
-        result['table'] = db_result
+        result['datatable'] = db_result
         result['sys_elapse'] = elapse
         result['sys_timestamp_exec'] = time.time()
 
@@ -576,7 +576,7 @@ class Program(object):
                     if len(v) > 3000:
                         v = v[:3000]
                     context[k] = v
-        context = json.dumps(context, cls=CadaEncoder)
+        context = json.dumps(context, cls=TapEncoder)
         stats['exc_type'] = str(exc_type)
         stats['exc_message'] = exc_message
         stats['exc_trace'] = exc_trace

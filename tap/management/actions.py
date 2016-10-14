@@ -15,7 +15,7 @@ from tap.service.cache import cache_get, cache_delete
 from tap.service.api import Program
 from tap.security import AuthControl
 from tap.service.common import (
-    conn_get, api2dict, CadaEncoder, dbconn_ratio_parse, dict2api
+    conn_get, api2dict, TapEncoder, dbconn_ratio_parse, dict2api
 )
 from tap.scripts.initializedb import (
     add_permission, add_user_permission)
@@ -171,7 +171,7 @@ class Action(object):
             result = self.cache_delete()
         elif 'cachegen' == action:
             result = self.cache_gen()
-        return Response(json.dumps(result, cls=CadaEncoder),
+        return Response(json.dumps(result, cls=TapEncoder),
                         content_type='application/json')
 
     def conn_test(self):
@@ -519,7 +519,7 @@ class Action(object):
                 release.version = request.params['version']
                 release.notes = request.params['notes']
                 release.uid_release = request.userid
-                release.content = json.dumps(api2dict(api), cls=CadaEncoder)
+                release.content = json.dumps(api2dict(api), cls=TapEncoder)
                 DBSession.add(release)
                 api.status = 'RELEASE'
                 result["success"] = 1

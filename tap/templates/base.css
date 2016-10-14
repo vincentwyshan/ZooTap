@@ -1,4 +1,4 @@
-.cada-sort:after{
+.-sort:after{
   float: right;
   display: inline;
   content: "\f0dc";
@@ -7,20 +7,20 @@
   font-weight: 400;
   color: #555;
 }
-.cada-sort-asc:after{
+.-sort-asc:after{
   content: "\f0de";
   top: 4px;
   color: #307ecc;
 }
-.cada-sort-desc:after{
+.-sort-desc:after{
   content: "\f0dd";
   top: -6px;
   color: #307ecc;
 }
-.cada-sort{
+.-sort{
   cursor: pointer;
 }
-.cada-sort a{
+.-sort a{
   text-decoration:none;
   color: #707070;
 }

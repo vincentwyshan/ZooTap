@@ -26,7 +26,7 @@ from sqlalchemy import func, or_
 
 from tap.security import valid_password
 from tap.service.common import dict2api, api2dict
-from tap.service.common import CadaEncoder, measure
+from tap.service.common import TapEncoder, measure
 from tap.service.common import conn_get, stmt_split
 from tap.service.common import show_tables, Paginator
 from tap.service.api import Program
@@ -134,7 +134,7 @@ class Management(object):
         with transaction.manager:
             projects = DBSession.query(TapProject)\
                 .order_by(TapProject.id.desc())
-            context = dict(pagename=u'Cada Tap', projects=projects)
+            context = dict(pagename=u' Tap', projects=projects)
             context.update(common_vars(self.request))
             return render_to_response('templates/home.html', context,
                                       request=self.request)
@@ -142,21 +142,21 @@ class Management(object):
     @view_config(route_name='docs', permission="view")
     def docs(self):
         context = common_vars(self.request)
-        context['pagename'] = u'Cada Tap - 文档'
+        context['pagename'] = u' Tap - 文档'
         return render_to_response('templates/docs.html', context,
                                   request=self.request)
 
     @view_config(route_name='apps', permission="view")
     def apps(self):
         context = common_vars(self.request)
-        context['pagename'] = u'Cada Tap - Applications'
+        context['pagename'] = u' Tap - Applications'
         return render_to_response('templates/applications.html', context,
                                   request=self.request)
 
     @view_config(route_name='apps_mobilehosting', permission="view")
     def apps_hosting(self):
         context = common_vars(self.request)
-        context['pagename'] = u'Cada Tap - Applications'
+        context['pagename'] = u' Tap - Applications'
         return render_to_response('templates/applications_mobileapp.html',
                                   context, request=self.request)
 
@@ -254,7 +254,7 @@ class Management(object):
                     table=result,
                     elapse=time_used()
                 )
-                result_json = json.dumps(result, cls=CadaEncoder)
+                result_json = json.dumps(result, cls=TapEncoder)
                 context = dict(result=result, result_json=result_json)
 
                 return render_to_response("templates/database_execute.html",
@@ -689,7 +689,7 @@ class Management(object):
 
         try:
             result = Program(config, None).run(paras)
-            result_json = json.dumps(result, cls=CadaEncoder)
+            result_json = json.dumps(result, cls=TapEncoder)
 
             context = dict(result=result, config=config, paras=paras,
                            result_json=result_json)
