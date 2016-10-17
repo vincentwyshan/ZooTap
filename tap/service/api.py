@@ -360,7 +360,7 @@ class Program(object):
                 self.report_stats_exc(stats, str(e), trace)
                 result = dict(
                     sys_elapse=[],
-                    table=[],
+                    datatable=[],
                     sys_error=cu('[%s]: %s' % (type(e).__name__, str(e))),
                     sys_status=500
                 )
@@ -535,7 +535,7 @@ class Program(object):
 
         # bind result
         if code_info.bind:
-            assert code_info.bind != 'table', "Don't bind data to `table`"
+            assert code_info.bind != 'datatable', "Don't bind data to `datatable`"
             data = self.bind_result(cursor, code_info.bind, dbtype, elapse)
             result[code_info.bind] = data
 
