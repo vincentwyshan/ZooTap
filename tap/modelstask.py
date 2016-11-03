@@ -17,7 +17,7 @@ from tap.models import (
 
 ENUM_OS_TYPE = Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
                     convert_unicode=True)
-ENUM_PYTHON_VER = Enum('ANY', 'LE2.5', '2.5', '2.6', '2.7', '3.0',
+ENUM_PYTHON_VER = Enum('ANY', 'LE2.5', '2.5', '2.6', '2.7', 'GE3.0',
                        name="t_python_ver", convert_unicode=True)
 ENUM_JAVA_VER = Enum('ANY', name="t_java_ver", convert_unicode=True)
 ENUM_DOTNET_VER = Enum('ANY', name="t_dotnet_ver", convert_unicode=True)

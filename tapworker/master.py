@@ -20,7 +20,6 @@ from tap.servicedef import TapTaskMaster
 from tap.servicedef.ttypes import TapError
 # from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
-from tap.common.thrifthelper import client_ensure
 from tap.models import DBSession
 from tap.modelstask import (
     TapTask,
@@ -219,86 +218,6 @@ class Handler(object):
             exectable = DBSession.query(TapTaskExecutable).filter_by(
                 md5=md5).first()
             return exectable.binary
-
-
-PORT = 10103
-
-
-class Client(object):
-    def __init__(self, host):
-        self.host = host
-        self.client = None
-        self.transport = None
-        self._newclient()
-
-    @client_ensure
-    def ping(self):
-        self.client.ping()
-
-    def _newclient(self):
-        transport = TSocket.TSocket(self.host, PORT)
-        # transport.setTimeout(1000*60*2)
-        # 超时最多两秒
-        transport.setTimeout(1000*2)
-        self.transport = TTransport.TBufferedTransport(transport)
-
-        # Wrap in a protocol
-        protocol = TBinaryProtocol.TBinaryProtocol(transport)
-
-        # Create a client to use the protocol encoder
-        self.client = TapTaskMaster.Client(protocol)
-
-        self.transport.open()
-
-    @client_ensure
-    def host_register(self, ip_address, listen_port, node_name, sys_name,
-                      release, version, machine, cpu_count, memory_total,
-                      old_ip_address, old_node_name, directory,
-                      software_requirements):
-        return self.client.host_register(
-            ip_address, listen_port, node_name, sys_name, release, version,
-            machine, cpu_count, memory_total, old_ip_address, old_node_name,
-            directory, software_requirements)
-
-    @client_ensure
-    def host_status(self, host_id, load_average, disk_remain, percent_cpu,
-                    percent_memory, network_sent, network_recv):
-        return self.client.host_status(
-            host_id, load_average, disk_remain, percent_cpu, percent_memory,
-            network_sent, network_recv
-        )
-
-    @client_ensure
-    def job_request(self, host_id):
-        return self.client.job_request(
-            host_id
-        )
-
-    @client_ensure
-    def job_start(self, host_id, job_id, start_time):
-        return self.client.job_start(
-            host_id, job_id, start_time
-        )
-
-    @client_ensure
-    def job_done(self, host_id, job_id, end_time, success, message):
-        return self.client.job_done(
-            host_id, job_id, end_time, success, message
-        )
-
-    @client_ensure
-    def executable_fetch(self, md5):
-        return self.client.executable_fetch(
-            md5
-        )
-
-    def close(self):
-        self.transport.close()
-
-
-def get_client():
-    host = os.environ.get('TAPWORKER_MASTERIP')
-    return Client(host)
 
 
 def run_server():
