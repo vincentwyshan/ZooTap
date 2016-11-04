@@ -8,7 +8,7 @@ from pyramid.authorization import ACLAuthorizationPolicy
 from tap.models import (
     DBSession,
     Base,
-    )
+)
 
 globalsettings = None
 def main(global_config, **settings):
