@@ -369,9 +369,9 @@ Index('tap_apierrors_clientid', TapApiErrors.client_id, TapApiErrors.occurrence_
 Index('tap_apierrors_uniqueid', TapApiErrors.api_id, TapApiErrors.client_id, TapApiErrors.hash_id, unique=True)
 
 
-class Task(Base):
-    __tablename__ = 'tap_task'
-    id = Column(Integer, Sequence('seq_taptasks_id'), primary_key=True)
+class TapAsyncTask(Base):
+    __tablename__ = 'tap_asynctask'
+    id = Column(Integer, Sequence('seq_tapatasks_id'), primary_key=True)
     task_type = Column(Unicode(30), nullable=False)  # EXCEL,
     task_name = Column(Unicode(30), nullable=False)
     status = Column(Enum('READY', 'RUNNING', 'DONE', 'FAIL', name="status",

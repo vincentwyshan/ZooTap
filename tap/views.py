@@ -49,7 +49,7 @@ from tap.models import (
     TapApiErrors,
     TapUserPermission,
     TapPermission,
-    Task,
+    TapAsyncTask,
     TapApiClientCustomAuth,
     CaptchaCode,
 )
@@ -934,7 +934,7 @@ class WidgetExcel(object):
 
         # save task
         with transaction.manager:
-            task = Task(
+            task = TapAsyncTask(
                 task_type='EXCEL', task_name=file_name,
                 attachment=excel_file.read(),
                 message="excel file uploaded.",
@@ -956,7 +956,7 @@ class WidgetExcel(object):
     def upload_progress(self):
         task_id = self.request.params['task_id']
         with transaction.manager:
-            task = DBSession.query(Task).get(task_id)
+            task = DBSession.query(TapAsyncTask).get(task_id)
             result = dict(id=task.id, status=task.status, message=task.message)
             response = Response(json.dumps(result))
             response.content_type = "application/json"

@@ -1,7 +1,5 @@
-
-+ i18n support and english documentation
 + Schedule Task design
-+ Add bilingual support
++ i18n support and english documentation
 + User profile page
 + API design ui tool (ref: http://petstore.swagger.io/#/user)
     + Hierarchy structure(api name)

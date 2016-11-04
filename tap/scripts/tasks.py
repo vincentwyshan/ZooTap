@@ -25,7 +25,7 @@ from sqlalchemy import engine_from_config
 from tap.common.character import _print, _cs
 from tap.service.common import conn_get
 from tap.models import (
-    Base, DBSession, Task, TapDBConn
+    Base, DBSession, TapAsyncTask, TapDBConn
 )
 
 
@@ -97,7 +97,7 @@ class ExcelHandler(object):
     def upload(cls, task_id):
         ExcelHandler.upload_status(task_id, u'RUNNING', u'upload start')
         with transaction.manager:
-            task = DBSession.query(Task).get(task_id)
+            task = DBSession.query(TapAsyncTask).get(task_id)
             dbconn_id = json.loads(task.parameters)['dbconn_id']
             file_path = tempfile.mkstemp(prefix='tap')[1]
             with open(file_path, 'wb') as save_file:
@@ -176,7 +176,7 @@ class ExcelHandler(object):
     def log_print(cls, task_id, *kargs):
         print task_id, ' '.join([_cs(v) for v in kargs])
         with transaction.manager:
-            t = DBSession.query(Task).get(task_id)
+            t = DBSession.query(TapAsyncTask).get(task_id)
             t.message = ' '.join([_cs(v) for v in kargs])
             t.message = t.message.decode('utf8')
 
@@ -184,7 +184,7 @@ class ExcelHandler(object):
     def upload_status(cls, task_id, status, message):
         print task_id, message
         with transaction.manager:
-            t = DBSession.query(Task).get(task_id)
+            t = DBSession.query(TapAsyncTask).get(task_id)
             t.status = status
             t.message = message
 

@@ -14,7 +14,6 @@ from tap.models import (
     TapUser
 )
 
-
 ENUM_OS_TYPE = Enum('ANY', 'LINUX', 'MAC', 'WINDOWS', name="t_os_type",
                     convert_unicode=True)
 ENUM_PYTHON_VER = Enum('ANY', 'LE2.5', '2.5', '2.6', '2.7', 'GE3.0',
@@ -43,7 +42,7 @@ class TapTask(Base):
     need_memory = Column(Integer)  # memory size need in MB
 
     # ENUM TYPE can be multiple, split by comma
-    require_os = Column(Unicode(64), default='LINUX')
+    require_os = Column(Unicode(64), default=u'LINUX')
     require_python = Column(Unicode(64), default=None)
     require_java = Column(Unicode(64), default=None)
     require_dotnet = Column(Unicode(64), default=None)
@@ -54,9 +53,9 @@ class TapTask(Base):
     project = relationship('TapTaskProject', backref="tasks")
 
     uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
-    user_create = relationship(TapUser, backref='tasks_created', )
+    user_create = relationship(TapUser, backref='tasks_created', foreign_keys=[uid_create])
     uid_modify = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
-    user_modify = relationship(TapUser, backref='tasks_modified')
+    user_modify = relationship(TapUser, backref='tasks_modified', foreign_keys=[uid_modify])
 
     alert_emails = Column(UnicodeText)  # email list, split by comma
 
@@ -78,32 +77,31 @@ class TapTaskProject(Base):
     name = Column(Unicode(30), nullable=False)
     description = Column(UnicodeText)
     uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
-    user_create = relationship(TapUser, backref='projects_created')
+    user_create = relationship(TapUser, backref='ttprojects_created')
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
 
 
-class TapTaskRunnable(Base):
-    __tablename__ = 'tap_taskrunnable'
-    id = Column(Integer, Sequence('seq_ttrunnable_id'), primary_key=True)
+class TapTaskSection(Base):
+    __tablename__ = 'tap_tasksection'
+    id = Column(Integer, Sequence('seq_ttsection_id'), primary_key=True)
 
     # executable_id = Column(Integer, ForeignKey('tap_taskexecutable.id'))
     # executable = relationship('TapTaskExecutable',
     #                           backref=backref('runnable', uselist=False))
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
-    task = relationship(TapTask, backref=backref('runnables', uselist=True))
+    task = relationship(TapTask, backref=backref('sections', uselist=True))
 
     # call executable $executable_name
     script = Column(UnicodeText)
-    script_type = Column(ENUM_SCRIPT_TYPE, default='SHELL')
+    script_type = Column(ENUM_SCRIPT_TYPE, default=u'SHELL')
 
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
-Index('tap_task_r_task_id', TapTaskRunnable.task_id)
-Index('tap_task_r_execute_id', TapTaskRunnable.executable_id, unique=True)
+Index('tap_task_r_task_id', TapTaskSection.task_id)
 
 
 class TapTaskExecutable(Base):
@@ -117,7 +115,7 @@ class TapTaskExecutable(Base):
     task = relationship(TapTask, backref=backref('executables', uselist=True))
 
     uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
-    user_create = relationship(TapUser, backref='projects_created')
+    user_create = relationship(TapUser, backref='executables_created')
 
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
@@ -126,11 +124,17 @@ Index('tap_task_executable_md5', TapTaskExecutable.md5, unique=True)
 
 
 class TapTaskHistory(Base):
+    # backup old task config
     __tablename__ = 'tap_taskhistory'
     id = Column(Integer, Sequence('seq_tthistory_id'), primary_key=True)
     task_id = Column(Integer, ForeignKey('tap_task.id'))
-    task = relationship(TapTask, backref=backref('runnables', uselist=True))
+    task = relationship(TapTask, backref=backref('histories', uselist=True))
     content = Column(LargeBinary)  # store as utf-8 string in json format
+
+    # user who create this history version task config
+    uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
+    user_create = relationship(TapUser, backref='taskhistories_created', )
+
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
@@ -152,13 +156,13 @@ class TapTaskStats(Base):
     last_executed_time = Column(DateTime)
     last_executed_result = Column(
         Enum('SUCCESS', 'FAIL', name="r_result_type", convert_unicode=True),
-        default='SUCCESS'
+        default=u'SUCCESS'
     )
     last_executed_error = Column(UnicodeText)
 
     status = Column(
         Enum('RUNNING', 'SLEEP', name="r_result_type", convert_unicode=True),
-        default='SLEEP'
+        default=u'SLEEP'
     )
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
@@ -181,7 +185,7 @@ class TapTaskHost(Base):
     memory_total = Column(Integer)  # bytes
 
     # environment support
-    os_type = Column(ENUM_OS_TYPE, default='LINUX')
+    os_type = Column(ENUM_OS_TYPE, default=u'LINUX')
     ver_python = Column(ENUM_PYTHON_VER, default=None)
     ver_java = Column(ENUM_JAVA_VER, default=None)
     ver_dotnet = Column(ENUM_DOTNET_VER, default=None)
@@ -215,7 +219,7 @@ Index('tap_task_host_rtime', TapTaskHost.report_time)
 class TapTaskHostHistory(Base):
     __tablename__ = 'tap_taskhost_history'
     id = Column(Integer, Sequence('seq_tthost_history_id'), primary_key=True)
-    host_id = Column(Integer, ForeignKey('tap_task_host.id'))
+    host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
     host = relationship(TapTaskHost, backref=backref('histories'))
 
     load_average = Column(Float)
@@ -231,14 +235,15 @@ Index('tap_task_hosthistory', TapTaskHostHistory.host_id,
 
 
 class TapTaskJobAssignment(Base):
+    """A job was assigned to 1 host, be about to call"""
     __tablename__ = 'tap_task_jobassignments'
     id = Column(Integer, Sequence('seq_ttjob_assign_id'), primary_key=True)
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
     task = relationship(TapTask, backref=backref('jobs'))
 
-    host_id = Column(Integer, ForeignKey('tap_task_host.id'))
-    host = relationship(TapTaskHost, backref=backref('histories'))
+    host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
+    host = relationship(TapTaskHost, backref=backref('assigns'))
 
     is_failed = Column(Boolean, default=None, nullable=True)
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
@@ -260,10 +265,10 @@ class TapTaskJobHistory(Base):
     id = Column(Integer, Sequence('seq_ttjob_history_id'), primary_key=True)
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
-    task = relationship(TapTask, backref=backref('jobs'))
+    task = relationship(TapTask, backref=backref('jobhistories'))
 
-    host_id = Column(Integer, ForeignKey('tap_task_host.id'))
-    host = relationship(TapTaskHost, backref=backref('histories'))
+    host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
+    host = relationship(TapTaskHost, backref=backref('jobhistories'))
 
     is_failed = Column(Boolean, default=None, nullable=True)
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
