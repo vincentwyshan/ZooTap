@@ -11,6 +11,8 @@ from tap.models import (
 )
 
 globalsettings = None
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -132,4 +134,4 @@ def main_service(global_config, **settings):
     return config.make_wsgi_app()
 
 
-__version__ = '0.3.7'
+__version__ = '0.3.8'
