@@ -108,7 +108,7 @@ class TapTaskExecutable(Base):
     __tablename__ = 'tap_taskexecutable'
     id = Column(Integer, Sequence('seq_ttexecutable_id'), primary_key=True)
     name = Column(Unicode(50), nullable=False)
-    md5 = Column(UnicodeText)
+    md5 = Column(Unicode(32))
     binary = deferred(Column(LargeBinary))
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))

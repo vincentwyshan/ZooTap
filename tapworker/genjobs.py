@@ -1,4 +1,7 @@
 #coding=utf8
+"""
+1.
+"""
 
 import os
 import time
@@ -22,7 +25,7 @@ from tap.modelstask import (
 
 
 # eager job generation interval, in minute
-EAGER_TIME = int(os.environ.get('TAP_JOBGEN_INTERVAL', 5))
+INTERVAL_RUN = int(os.environ.get('TAP_JOBGEN_INTERVAL', 5))
 
 
 def gen_jobs():
@@ -33,9 +36,10 @@ def gen_jobs():
         task_list = DBSession.query(TapTask.id).filter_by(disable=False)
         task_list = [t.id for t in task_list]
 
-        # get all jobs
+        # get all jobs, start time greater than now + INTERVAL_RUN minutes
+        start_time = now + datetime.timedelta(minutes=INTERVAL_RUN)
         job_list = DBSession.query(TapTaskJobAssignment.task_id).filter(
-            TapTaskJobAssignment.start_time > now)
+            TapTaskJobAssignment.start_time > start_time)
         job_list = [j.task_id for j in job_list]
 
         # calculate difference
@@ -51,7 +55,7 @@ def gen_jobs():
             cron = croniter(task.cron, now)
             while True:
                 start_time = cron.get_next(datetime.datetime)
-                if (start_time - now).seconds > (EAGER_TIME * 60):
+                if (start_time - now).seconds > (INTERVAL_RUN * 60):
                     break
 
                 create_job(host_choices, hosts, start_time, task, task_id)
@@ -73,7 +77,7 @@ def create_job(host_choices, hosts, start_time, task):
         job.task_id = task.id
         history.task_id = task.id
 
-        # match requirements and host resource(only memory)
+        # match requirements and host resource(only verify memory)
         if not host_choices:
             host_choices.extend(list(hosts))
         for host in host_choices:
@@ -157,9 +161,9 @@ def main():
 def entry_point():
     usage = "usage: %prog production.ini [options]"
     parser = OptionParser(usage=usage)
-    parser.add_option('-i', type="string", dest="interval",
-                      default="1M",
-                      help="stats interval: [1M/5M/10M/30M/1H]")
+    # parser.add_option('-i', type="string", dest="interval",
+    #                   default="1M",
+    #                   help="stats interval: [1M/5M/10M/30M/1H]")
     (options, args) = parser.parse_args()
 
     # init_session_from_cmd()

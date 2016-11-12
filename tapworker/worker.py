@@ -1,9 +1,12 @@
 #coding=utf8
 """
-1. Process control
-2. Report process status
-3. Save log
-4. Log file query API
+Task worker do following things:
+    1. Register host, update status every 1 minutes
+    2. In charge of running jobs
+    3. Get jobs and schedule jobs
+    4. 1 host can only run 1 worker
+    5. Process control, save process log
+    6. API for querying log files
 """
 
 import os
@@ -251,6 +254,10 @@ def forever_status():
 
 
 def main():
+    """
+
+    :return:
+    """
     # register host
     register()
 
