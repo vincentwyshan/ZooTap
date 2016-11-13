@@ -154,7 +154,6 @@ class Handler(object):
             result = []
             for job in jobs:
                 _job = {}
-                # TODO
                 _job['job_id'] = str(job.id)
                 _job['start_time'] = job.start_time.strftime('%Y-%d-%m %H:%M:%S')
                 _job['task_name'] = job.task.name.encode("utf8")
