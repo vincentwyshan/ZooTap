@@ -294,7 +294,7 @@ class Management(object):
             apis = DBSession.query(TapApi)\
                 .filter(TapApi.project_id==project_id)
             if q:
-                apis = apis.filter(or_(TapApi.cnname.like(u'%'+q+u'%'),
+                apis = apis.filter(or_(TapApi.fullname.like(u'%'+q+u'%'),
                                        TapApi.name.like(u'%'+q+u'%')))
             total = apis.count()
             if sort_field and sort_direction:
@@ -336,7 +336,7 @@ class Management(object):
                               for t in timeseries]
                 spark_time[api.id] = ','.join(_spark_time)
 
-            context = dict(project=project, pagename=project.cnname,
+            context = dict(project=project, pagename=project.fullname,
                            apis=apis, paginator=paginator, q=q,
                            spark_data=spark_data, spark_time=spark_time,
                            sort_field=sort_field, sort_direction=sort_direction)
@@ -382,7 +382,7 @@ class Management(object):
                            api=api, active_config=True, dbconn=dbconn,
                            dbconn_secondary=dbconn_secondary)
             context.update(common_vars(self.request))
-            return render_to_response("templates/api_config.html", context,
+            return render_to_response("templates/api/api_config.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_stats", permission="view")
@@ -422,7 +422,7 @@ class Management(object):
                            category=category, paginator=paginator,
                            error_list=error_list, client_id=client_id)
             context.update(common_vars(self.request))
-            return render_to_response("templates/api_stats.html", context,
+            return render_to_response("templates/api/api_stats.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_cachemanage", permission="view")
@@ -453,7 +453,7 @@ class Management(object):
                            selected=selected, api_selected=api_selected,
                            math=math)
             context.update(common_vars(self.request))
-            return render_to_response("templates/api_cachemanage.html",
+            return render_to_response("templates/api/api_cachemanage.html",
                                       context, request=self.request)
 
     @view_config(route_name="api_release", permission="view")
@@ -496,7 +496,7 @@ class Management(object):
                            releases=releases, paginator=paginator,
                            release_db=release_db, release_content=release_content)
             context.update(common_vars(self.request))
-            return render_to_response("templates/api_release.html", context,
+            return render_to_response("templates/api/api_release.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_release_version", permission="view")
@@ -583,7 +583,7 @@ class Management(object):
                            auth_list=auth_list, api=api, active_auth=True,
                            clients=clients)
             context.update(common_vars(self.request))
-            return render_to_response("templates/auth_home.html", context,
+            return render_to_response("templates/api/auth_home.html", context,
                                       request=self.request)
 
     # @view_config(route_name="client_accesskeys", permission="view")
@@ -643,7 +643,7 @@ class Management(object):
                     ))
                 config = dict(
                     id=api_id, name=params.get('name'),
-                    cnname=params.get('cnname'),
+                    fullname=params.get('fullname'),
                     description=params.get('description'), cache_time=0,
                     writable=bool(int(params.get('writable'))),
                     auth_type='OPEN',
@@ -698,8 +698,8 @@ class Management(object):
                 context = dict(result=result, config=config, paras=paras,
                                result_json=result_json)
 
-                return render_to_response("templates/api_test.html", context,
-                                          request=self.request)
+                return render_to_response("templates/api/api_test.html",
+                                          context, request=self.request)
             except Exception as e:
                 import traceback
                 msg = str(e)
@@ -962,3 +962,12 @@ class WidgetExcel(object):
             response.content_type = "application/json"
             return response
 
+
+class TaskProject(object):
+    def __init__(self, request):
+        self.request = request
+
+    @view_config(route_name="task_project_index")
+    def upload_view(self):
+        with transaction.manager:
+            pass

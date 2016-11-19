@@ -41,7 +41,7 @@ def gen_breadcrumbs(request):
                 {"url": '/management/project', "class": "", "text": u"项目"},
             )
             result.append(
-                {"class": "active", "text": project.cnname},
+                {"class": "active", "text": project.fullname},
             )
     elif re.match(ur"/management/api/\d+", request.path):
         api_id = re.findall(r'\d+', request.path)[0]
@@ -52,10 +52,10 @@ def gen_breadcrumbs(request):
             )
             result.append(
                 {"url": '/management/project/%s' % api.project.id,
-                 "class": "",  "text": api.project.cnname},
+                 "class": "",  "text": api.project.fullname},
             )
             result.append(
-                {"class": "active", "text": api.cnname}
+                {"class": "active", "text": api.fullname}
             )
     elif re.match(ur"/management/client", request.path):
 
@@ -128,6 +128,6 @@ def gen_project_names(request):
         projects = DBSession.query(TapProject).order_by(TapProject.id.desc())
         for project in projects:
             result.append(
-                dict(id=project.id, name=project.cnname)
+                dict(id=project.id, name=project.fullname)
             )
         return result

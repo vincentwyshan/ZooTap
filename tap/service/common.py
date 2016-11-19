@@ -83,7 +83,7 @@ def api2dict(api):
     result = dict(
         id=api.id,
         name=api.name,
-        cnname=api.cnname,
+        fullname=api.fullname,
         description=api.description,
         cache_time=api.cache_time,
         writable=api.writable,
@@ -97,7 +97,7 @@ def api2dict(api):
         auth_clients=[],
         project=dict(
             name=api.project.name,
-            cnname=api.project.name,
+            fullname=api.project.name,
             created=api.project.created,
             timestamp=api.project.timestamp
         ),

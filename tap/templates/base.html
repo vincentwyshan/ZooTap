@@ -164,8 +164,8 @@
 
             <li class="${'active' if active_project else ''} hover">
                 <a href="/management/project" class="dropdown-toggle" onclick="javascript: window.location.href='/management/project';">
-                    <i class="menu-icon fa fa-gears"></i>
-                    <span class="menu-text"> 项目 </span>
+                    <i class="menu-icon fa fa-flask"></i>
+                    <span class="menu-text"> API </span>
 
                     <b class="arrow fa fa-angle-right"></b>
                 </a>
@@ -176,7 +176,7 @@
                     %for project in project_names:
                     <li class="hover ${'active' if (current_project_id==project['id']) else ''}">
                         <a href="/management/project/${project['id']}">
-                            <i class="menu-icon fa fa-codepen"></i>
+                            <i class="menu-icon fa fa-dot-circle-o"></i>
                             ${project['name']}
                         </a>
                         <b class="arrow"></b>
@@ -186,9 +186,34 @@
                 %endif
             </li>
 
+            <li class="hover ${'active' if active_jobs else ''}">
+                <a href="/management/task" class="dropdown-toggle"
+                   onclick="javascript: window.location.href='/management/job';">
+                    <i class="menu-icon fa fa-calendar-check-o"></i>
+                    <span class="menu-text"> Task </span>
+                    <b class="arrow fa fa-angle-right"></b>
+                </a>
+
+                %if project_names:
+                <ul class="submenu">
+                    %for project in project_names:
+                    <li class="hover ${'active' if (current_project_id==project['id']) else ''}">
+                        <a href="/management/project/${project['id']}">
+                            <i class="menu-icon fa fa-dot-circle-o"></i>
+                            ${project['name']}
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                    %endfor
+                </ul>
+                %endif
+
+            </li>
+
+
             <li class="hover ${'active' if active_client else ''}">
                 <a href="/management/client" class="dropdown-toggle" onclick="javascript: window.location.href='/management/client';">
-                    <i class="menu-icon fa fa-ticket"></i>
+                    <i class="menu-icon fa fa-laptop"></i>
                     <span class="menu-text"> 客户端 </span>
 
                 </a>
@@ -196,7 +221,7 @@
 
             <li class="hover ${'active' if active_users else ''}">
                 <a href="/management/user/list" class="dropdown-toggle" onclick="javascript: window.location.href='/management/user/list';">
-                    <i class="menu-icon fa fa-vcard"></i>
+                    <i class="menu-icon fa fa-address-book"></i>
                     <span class="menu-text"> 管理 </span>
 
                 </a>

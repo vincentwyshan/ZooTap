@@ -71,13 +71,39 @@ Index('tap_task_p_id_name', TapTask.project_id, TapTask.name, unique=True)
 Index('tap_task_disable', TapTask.disable)
 
 
+class TapTaskHostBind(Base):
+    """
+    Assign task to specify host
+    """
+    __tablename__ = 'tap_taskhostbind'
+    id = Column(Integer, Sequence('seq_tthostbind_id'), primary_key=True)
+
+    # environment variables, override Task's variables(variables with same name)
+    variables = Column(Integer)  # environment variables, json format
+    # override Task's cron
+    cron = Column(Unicode(20))  # cron expression
+
+    task_id = Column(Integer, ForeignKey('tap_task.id'))
+    task = relationship(TapTask, backref=backref('bind_hosts'))
+
+    host_id = Column(Integer, ForeignKey("tap_taskhost.id"), nullable=True)
+    host = relationship('TapTaskHost', backref="bind_tasks")
+
+    uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
+    user_create = relationship(TapUser, backref='bind_tasks_created')
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+    timestamp = Column(DateTime, default=datetime.datetime.now,
+                       onupdate=datetime.datetime.now, nullable=False)
+
+
+
 class TapTaskProject(Base):
     __tablename__ = 'tap_taskproject'
     id = Column(Integer, Sequence('seq_ttproject_id'), primary_key=True)
     name = Column(Unicode(30), nullable=False)
     description = Column(UnicodeText)
     uid_create = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
-    user_create = relationship(TapUser, backref='ttprojects_created')
+    user_create = relationship(TapUser, backref='task_projects_created')
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
@@ -124,7 +150,9 @@ Index('tap_task_executable_md5', TapTaskExecutable.md5, unique=True)
 
 
 class TapTaskHistory(Base):
-    # backup old task config
+    """
+    TapTask editing history
+    """
     __tablename__ = 'tap_taskhistory'
     id = Column(Integer, Sequence('seq_tthistory_id'), primary_key=True)
     task_id = Column(Integer, ForeignKey('tap_task.id'))
@@ -154,14 +182,11 @@ class TapTaskStats(Base):
     stats_total_fail = Column(BigInteger)
 
     last_executed_time = Column(DateTime)
-    last_executed_result = Column(
-        Enum('SUCCESS', 'FAIL', name="r_result_type", convert_unicode=True),
-        default=u'SUCCESS'
-    )
     last_executed_error = Column(UnicodeText)
 
     status = Column(
-        Enum('RUNNING', 'SLEEP', name="r_result_type", convert_unicode=True),
+        Enum('RUNNING', 'SUCCESS', 'FAIL', name="r_result_type",
+             convert_unicode=True),
         default=u'SLEEP'
     )
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
@@ -192,7 +217,7 @@ class TapTaskHost(Base):
     ver_php = Column(ENUM_PHP_VER, default=None)
     ver_node = Column(ENUM_NODE_VER, default=None)
 
-    # environment variables
+    # environment variables, where logs saved to
     directory = Column(Unicode(256))
 
     # load stats
@@ -245,6 +270,7 @@ class TapTaskJobAssignment(Base):
     host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
     host = relationship(TapTaskHost, backref=backref('assigns'))
 
+    # TODO change to status (SUCCESS, FAIL, RUNNING)
     is_failed = Column(Boolean, default=None, nullable=True)
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
 
@@ -270,6 +296,7 @@ class TapTaskJobHistory(Base):
     host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
     host = relationship(TapTaskHost, backref=backref('jobhistories'))
 
+    # TODO change to status (SUCCESS, FAIL, RUNNING)
     is_failed = Column(Boolean, default=None, nullable=True)
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
 

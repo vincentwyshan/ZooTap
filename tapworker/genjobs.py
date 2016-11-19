@@ -43,6 +43,7 @@ def gen_jobs():
         job_list = [j.task_id for j in job_list]
 
         # calculate difference
+        # TODO consider TaskHostBind
         no_job_list = set(task_list).difference(job_list)
 
         # get hosts
@@ -102,6 +103,7 @@ def verify_host(task, host):
     verify if host match the task's requirements and resources(only memory)
     :return: True/False
     """
+    # TODO consider TaskHostBind
     if task.require_os:
         require_os = task.require_os.split(',')
         match_os = False

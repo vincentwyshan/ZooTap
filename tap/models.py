@@ -78,7 +78,7 @@ class TapProject(Base):
     __tablename__ = 'tap_project'
     id = Column(Integer, Sequence('seq_tapproject_id'), primary_key=True)
     name = Column(Unicode(30), nullable=False)
-    cnname = Column(Unicode(60))
+    fullname = Column(Unicode(60))
     description = Column(UnicodeText)
     uid_create = Column(Integer, ForeignKey('tap_user.id'))
     user_create = relationship('TapUser', backref='projects_created', foreign_keys=[uid_create])
@@ -109,7 +109,7 @@ class TapApi(Base):
     __tablename__ = 'tap_api'
     id = Column(Integer, Sequence('seq_tapapi_id'), primary_key=True)
     name = Column(Unicode(30), nullable=False)
-    cnname = Column(Unicode(60))
+    fullname = Column(Unicode(60))
     description = Column(UnicodeText)
 
     dbconn = relationship('TapDBConn', secondary=api_db,

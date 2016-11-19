@@ -51,7 +51,7 @@ def main(argv=sys.argv):
             DBSession.flush()
         project = DBSession.query(TapProject).filter_by(name=u'PROJECT0').first()
         if not project:
-            project = TapProject(name=u'PROJECT0', cnname=u"测试",
+            project = TapProject(name=u'PROJECT0', fullname=u"测试",
                                  description=u"测试项目", uid_create=user.id)
             DBSession.add(project)
 

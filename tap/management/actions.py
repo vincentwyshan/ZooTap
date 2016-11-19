@@ -94,7 +94,7 @@ def perm_check(func):
         elif 'permissionsave' == action:
             perm = 'SYS_USER:edit'
         elif 'adminsave' == action:
-            # 单独控制
+            # Shouldn't auth in this function
             perm = 'PASS'
         elif 'passwordchange' == action:
             perm = 'SYS_USER:edit'
@@ -104,6 +104,9 @@ def perm_check(func):
             perm = '%s:delete' % a.project_name_byapi(params['api_id'])
         elif 'cachegen' == action:
             perm = '%s:add' % a.project_name_byapi(params['api_id'])
+        # Task Project
+        elif 'TaskProjectCreate' == action:
+            perm = 'SYS_TPROJECT:add'
         else:
             return perm_check_fail(u'没有标记接口权限')
         if perm != 'PASS':
@@ -250,13 +253,13 @@ class Action(object):
                     project = DBSession.query(TapProject).get(project_id)
                 else:
                     name_valid(self.request.params.get('name'))
-                    assert self.request.params.get('cnname') not in ('', None), "名称不能为空"
+                    assert self.request.params.get('fullname') not in ('', None), "名称不能为空"
                     project = TapProject()
                     DBSession.add(project)
                     project.uid_create = self.request.userid
                     project.uid_owner = self.request.userid
                     project.name = self.request.params.get('name').strip().upper()
-                    project.cnname = self.request.params.get('cnname').strip()
+                    project.fullname = self.request.params.get('fullname').strip()
                     project.description = self.request.params.get('description')  or ''
                     permission = add_permission(
                         project.name, u'项目:' + project.name)
@@ -265,7 +268,7 @@ class Action(object):
                 if 'name' in self.request.params:
                     name_valid(self.request.params.get('name'))
                     project.name = self.request.params.get('name').strip().upper()
-                obj_setattr(project, 'cnname', self.request)
+                obj_setattr(project, 'fullname', self.request)
                 obj_setattr(project, 'description', self.request)
             result["success"] = 1
         except BaseException, e:
@@ -285,7 +288,7 @@ class Action(object):
                     api = DBSession.query(TapApi).get(api_id)
                 else:
                     name_valid(self.request.params.get('name'))
-                    assert request.params.get('cnname') not in ('', None),\
+                    assert request.params.get('fullname') not in ('', None),\
                         "名称不能为空"
                     assert request.params.get('project_id') not in ('',  None)
                     api = TapApi()
@@ -293,7 +296,7 @@ class Action(object):
                     api.uid_create = self.request.userid
                     api.uid_update = self.request.userid
                     api.name = self.request.params.get('name').strip()
-                    api.cnname = self.request.params.get('cnname').strip()
+                    api.fullname = self.request.params.get('fullname').strip()
                     api.description = request.params.get('description') or ''
                     api.project_id = self.request.params['project_id']
                     source = TapSource()
@@ -307,7 +310,7 @@ class Action(object):
                     #     add_user_permission(user, perm, True, True, True, True)
                     changed = True
                 changed = obj_setattr(api, 'name', request) or changed
-                changed = obj_setattr(api, 'cnname', request) or changed
+                changed = obj_setattr(api, 'fullname', request) or changed
                 changed = obj_setattr(api, 'description', request) or changed
                 # changed = obj_setattr(api, 'dbconn_id', request, 'INT') or \
                 #           changed

@@ -40,13 +40,13 @@
                     <div class="panel-body">
                     %for project_id, api_groups in project_apis.items():
                     <blockquote style="padding-top:0;padding-bottom:0;">
-                        <h5><a class="grey" href="/management/project/${project_id}">${api_groups[0][0].project.name} - ${api_groups[0][0].project.cnname}</a></h5>
+                        <h5><a class="grey" href="/management/project/${project_id}">${api_groups[0][0].project.name} - ${api_groups[0][0].project.fullname}</a></h5>
 
                         %for api_list in api_groups:
                         <div class="row">
                             %for api in api_list:
                             <div class="col-xs-4" style="min-height:50px;padding-top:8px;padding-bottom:8px;">
-                                <small><a href="/management/api/${api.id}">${api.name} (${api.cnname})</a></small>
+                                <small><a href="/management/api/${api.id}">${api.name} (${api.fullname})</a></small>
                                 %if api.description:
                                 <p style="font-size:13px;" class="grey" ${('title="%s"' % api.description.replace('"', r'\"')) if len(api.description) >= 100 else ''}><i
                                     class="fa fa-pagelines"></i>&nbsp;&nbsp;

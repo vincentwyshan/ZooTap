@@ -74,17 +74,17 @@
                                 </th>
                                 %endif
 
-                                %if sort_field=='api-cnname' and sort_direction == 'asc':
+                                %if sort_field=='api-fullname' and sort_direction == 'asc':
                                 <th class="-sort -sort-asc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'desc'})}">名称</a>
                                 </th>
-                                %elif sort_field=='api-cnname' and sort_direction == 'desc':
+                                %elif sort_field=='api-fullname' and sort_direction == 'desc':
                                 <th class="-sort -sort-desc">
                                     <a href="?${paginator.param(1, {'sort-direction': 'asc'})}">名称</a>
                                 </th>
                                 %else:
                                 <th class="-sort">
-                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-cnname'})}">名称</a>
+                                    <a href="?${paginator.param(1, {'sort-direction': 'asc', 'sort-field':'api-fullname'})}">名称</a>
                                 </th>
                                 %endif
 
@@ -134,10 +134,10 @@
                                 </td>
                                 <td><a href="/management/api/${api.id}">${api.name}</a></td>
 
-                                %if len(api.cnname) > 15:
-                                <td data-toggle="tooltip" title="${api.cnname}">${api.cnname[:14] + u'...'}</td>
+                                %if len(api.fullname) > 15:
+                                <td data-toggle="tooltip" title="${api.fullname}">${api.fullname[:14] + u'...'}</td>
                                 %else:
-                                <td>${api.cnname}</td>
+                                <td>${api.fullname}</td>
                                 %endif
 
                                 <td>${api.user_create.name}</td>
@@ -249,7 +249,7 @@
                         </label>
 
                         <div class="col-sm-9">
-                            <input type="text" id="form-field-1" name="cnname" placeholder="" class="col-xs-10">
+                            <input type="text" id="form-field-1" name="fullname" placeholder="" class="col-xs-10">
                         </div>
                     </div>
 
@@ -301,7 +301,7 @@
 					名称
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="cnname" value="${project.cnname}" placeholder="连接字符串" class="col-xs-10">
+					<input type="text" id="form-field-1" name="fullname" value="${project.fullname}" placeholder="连接字符串" class="col-xs-10">
 				</div>
 			</div>
 

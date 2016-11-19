@@ -103,6 +103,9 @@ def add_route(config):
                      factory="tap.security.AuthControl")
     config.add_route("charts", "/management/charts")
 
+    # Task
+    config.add_route("task_project_index", "/management/task")
+
     # 上传Excel
     # TODO 未设置权限
     config.add_route("upload_excel", "/management/tools/upload-excel")

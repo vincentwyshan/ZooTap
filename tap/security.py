@@ -20,6 +20,9 @@ from tap.models import (
     TapProject,
     TapApi,
 )
+from tap.modelstask import (
+    TapTaskProject,
+)
 
 
 def groupfinder(user_id, request):
@@ -83,7 +86,6 @@ class AuthControl(object):
         return result
 
     def get_userperm(self, perm_name):
-        # import pdb; pdb.set_trace()
         with transaction.manager:
             need_permission, action = perm_name.split(':')
             permission = DBSession.query(TapPermission).filter_by(
@@ -123,6 +125,10 @@ class AuthControl(object):
     def project_name_byapi(self, api_id):
         api = DBSession.query(TapApi).get(api_id)
         return api.project.name
+
+    def task_project_name(self, tproject_id):
+        project = DBSession.query(TapTaskProject).get(tproject_id)
+        return project.name
 
     def api_name(self, api_id):
         api = DBSession.query(TapApi).get(api_id)
