@@ -5,6 +5,11 @@ import os
 import sys
 import datetime
 
+from pyramid.i18n import TranslationStringFactory
+
+
+_ = TranslationStringFactory('tap')
+
 
 def _cs(obj, encoding='utf8'):
     """

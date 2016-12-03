@@ -242,6 +242,9 @@ Index('tap_task_host_rtime', TapTaskHost.report_time)
 
 
 class TapTaskHostHistory(Base):
+    """
+    Host history by minute
+    """
     __tablename__ = 'tap_taskhost_history'
     id = Column(Integer, Sequence('seq_tthost_history_id'), primary_key=True)
     host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
@@ -256,6 +259,48 @@ class TapTaskHostHistory(Base):
 
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
 Index('tap_task_hosthistory', TapTaskHostHistory.host_id,
+      TapTaskHostHistory.created)
+
+
+class TapTaskHostHistoryHourly(Base):
+    """
+    Host history by hour
+    """
+    __tablename__ = 'tap_taskhost_historyh'
+    id = Column(Integer, Sequence('seq_tthost_historyh_id'), primary_key=True)
+    host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
+    host = relationship(TapTaskHost, backref=backref('historiesh'))
+
+    load_average = Column(Float)
+    disk_remain = Column(Integer)
+    percent_cpu = Column(Float)
+    percent_memory = Column(Float)
+    network_sent = Column(Integer)
+    network_recv = Column(Integer)
+
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+Index('tap_task_hosthistoryh', TapTaskHostHistory.host_id,
+      TapTaskHostHistory.created)
+
+
+class TapTaskHostHistoryDaily(Base):
+    """
+    Task history by day
+    """
+    __tablename__ = 'tap_taskhost_historyd'
+    id = Column(Integer, Sequence('seq_tthost_historyd_id'), primary_key=True)
+    host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
+    host = relationship(TapTaskHost, backref=backref('historiesd'))
+
+    load_average = Column(Float)
+    disk_remain = Column(Integer)
+    percent_cpu = Column(Float)
+    percent_memory = Column(Float)
+    network_sent = Column(Integer)
+    network_recv = Column(Integer)
+
+    created = Column(DateTime, default=datetime.datetime.now, nullable=False)
+Index('tap_task_hosthistoryd', TapTaskHostHistory.host_id,
       TapTaskHostHistory.created)
 
 

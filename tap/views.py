@@ -24,6 +24,7 @@ import transaction
 import xlrd
 from sqlalchemy import func, or_
 
+from tap.common.character import _
 from tap.security import valid_password
 from tap.service.common import dict2api, api2dict
 from tap.service.common import TapEncoder, measure
@@ -53,6 +54,7 @@ from tap.models import (
     TapApiClientCustomAuth,
     CaptchaCode,
 )
+
 
 # 发布时取消注释
 # @view_config(context=Exception)
@@ -122,6 +124,9 @@ def common_vars(request):
         project_names=project_names
     )
     result.update(gen_active(request))
+
+    # i18n translate
+    result['_'] = lambda trans: request.localizer.translate(_(trans))
     return result
 
 

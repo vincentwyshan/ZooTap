@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 #coding=utf8
-__author__ = 'Vincent@Home'
+"""
+author: Vincent@Home
+"""
 
 import os
 import sys
@@ -30,7 +32,7 @@ from tap.models import (
 
 
 # setup_logging(config_uri)
-from tap import globalsettings
+from tap.server import globalsettings
 settings = globalsettings
 
 if settings is None:  # 'celery' in repr(sys.argv):
