@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE 1.0\n"
-"POT-Creation-Date: 2016-12-03 21:26+0800\n"
-"PO-Revision-Date: 2016-12-03 21:28+0800\n"
+"POT-Creation-Date: 2016-12-04 13:27+0800\n"
+"PO-Revision-Date: 2016-12-04 12:56+0800\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -17,17 +17,41 @@ msgstr ""
 "X-Generator: Poedit 1.8.11\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: tap/templates/base.html:118
-msgid "登出"
+#: tap/views.py:815
+msgid "访问量"
 msgstr ""
 
-#: tap/templates/base.html:153
+#: tap/views.py:818
+msgid "错误量"
+msgstr ""
+
+#: tap/common/i18nwords.py:7
+msgid "响应时间"
+msgstr ""
+
+#: tap/management/uicontrol.py:23 tap/templates/base.html:161
+msgid "数据库"
+msgstr "数据库"
+
+#: tap/management/uicontrol.py:24
+msgid "项目"
+msgstr ""
+
+#: tap/management/uicontrol.py:25 tap/templates/base.html:218
+msgid "客户端"
+msgstr ""
+
+#: tap/management/uicontrol.py:26
+msgid "用户列表"
+msgstr ""
+
+#: tap/management/uicontrol.py:27 tap/templates/base.html:153
 msgid "首页"
 msgstr "首页"
 
-#: tap/templates/base.html:161
-msgid "数据库"
-msgstr "数据库"
+#: tap/templates/base.html:118
+msgid "登出"
+msgstr ""
 
 #: tap/templates/base.html:169
 msgid "API"
@@ -37,13 +61,92 @@ msgstr "接口"
 msgid "Task"
 msgstr "任务"
 
-#: tap/templates/base.html:218
-msgid "客户端"
-msgstr ""
-
 #: tap/templates/base.html:226
 msgid "管理"
 msgstr ""
+
+#: tap/templates/base.html:320
+msgid "文档"
+msgstr ""
+
+#: tap/templates/database.html:9
+msgid "添加"
+msgstr ""
+
+#: tap/templates/database.html:15
+msgid "操作"
+msgstr ""
+
+#: tap/templates/database.html:18
+msgid "开始编辑"
+msgstr ""
+
+#: tap/templates/database.html:19
+msgid "停止编辑"
+msgstr ""
+
+#: tap/templates/database.html:29 tap/templates/database.html:67
+#: tap/templates/database.html:71
+msgid "名称"
+msgstr ""
+
+#: tap/templates/database.html:30 tap/templates/database.html:77
+msgid "DB类型"
+msgstr ""
+
+#: tap/templates/database.html:31
+msgid "创建者"
+msgstr ""
+
+#: tap/templates/database.html:32
+msgid "时间"
+msgstr ""
+
+#: tap/templates/database.html:33 tap/templates/database.html:92
+#: tap/templates/database.html:95
+msgid "连接字符串"
+msgstr ""
+
+#: tap/templates/database.html:60
+msgid "创建数据库连接"
+msgstr ""
+
+#: tap/templates/database.html:81
+msgid "选择DB类型"
+msgstr ""
+
+#: tap/templates/database.html:101 tap/templates/database.html:104
+msgid "说明"
+msgstr ""
+
+#: tap/templates/database.html:110
+msgid "选项"
+msgstr ""
+
+#: tap/templates/database.html:113
+msgid "其它配置项"
+msgstr ""
+
+#: tap/templates/database.html:122
+msgid "测试连接"
+msgstr ""
+
+#: tap/templates/database.html:123
+msgid "保存"
+msgstr ""
+
+#: tap/templates/database.html:172
+msgid "加载失败!"
+msgstr ""
+
+#: tap/templates/database.html:192
+msgid "连接成功!"
+msgstr ""
+
+#~ msgid ""
+#~ "测试，长句\r\n"
+#~ "包含换行符号!@#$%^&*及其他各种符号"
+#~ msgstr "It’s a long sentense, haha"
 
 #~ msgid "add-number"
 #~ msgstr "添加数字 ${number}"

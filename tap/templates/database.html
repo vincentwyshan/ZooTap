@@ -5,17 +5,17 @@
     <a data-toggle="modal" href="#write" id="btn-new-conn" class="btn-new-mail pull-right">
 		<span class="btn btn-primary no-border">
 			<i class="ace-icon fa fa-plus bigger-130"></i>
-			<span class="bigger-110">添加</span>
+			<span class="bigger-110">${request._(u'添加')}</span>
 		</span>
 	</a>
 
 	<div class="btn-group pull-right" style="margin:9px 5px 0 0;">
 		<button data-toggle="dropdown" class="btn btn-primary btn-white dropdown-toggle">
-			操作 <i class="ace-icon fa fa-angle-down icon-on-right"></i>
+			${request._(u'操作')} <i class="ace-icon fa fa-angle-down icon-on-right"></i>
 		</button>
 		<ul class="dropdown-menu">
-			<li> <a id="start-edit" href="#">开始编辑</a> </li>
-			<li> <a id="stop-edit" href="#">停止编辑</a> </li>
+			<li> <a id="start-edit" href="#">${request._(u'开始编辑')}</a> </li>
+			<li> <a id="stop-edit" href="#">${request._(u'停止编辑')}</a> </li>
 		</ul>
 	</div>
 
@@ -25,11 +25,11 @@
 	<table class="table table-hover table-striped">
 		<thead>
 		<tr>
-			<th>名称</th>
-			<th>DB类型</th>
-			<th>创建者</th>
-			<th>时间</th>
-			<th>连接字符串</th>
+			<th>${request._(u'名称')}</th>
+			<th>${request._(u'DB类型')}</th>
+			<th>${request._(u'创建者')}</th>
+			<th>${request._(u'时间')}</th>
+			<th>${request._(u'连接字符串')}</th>
 		</tr>
 		</thead>
 		<tbody>
@@ -56,28 +56,28 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">创建数据库连接</h4>
+        <h4 class="modal-title" id="myModalLabel">${request._(u'创建数据库连接')}</h4>
       </div>
       <div class="modal-body">
         <form class="form-horizontal" id="new-conn" role="form">
 			<!-- #section:elements.form -->
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					名称
+					${request._(u'名称')}
 				</label>
 				<div class="col-sm-9">
                     <input type="hidden" name="id" />
-					<input type="text" name="name" placeholder="名称" class="col-xs-10">
+					<input type="text" name="name" placeholder="${request._(u'名称')}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					DB类型
+					${request._(u'DB类型')}
 				</label>
 				<div class="col-sm-9">
 					<select name="dbtype" placeholder="" class="chosen-select col-xs-10">
-						<option value="">选择DB类型</option>
+						<option value="">${request._(u'选择DB类型')}</option>
 						<option>ORACLE</option>
 						<option>MSSQL</option>
 						<option>MYSQL</option>
@@ -88,28 +88,29 @@
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					连接字符串
+					${request._(u'连接字符串')}
 				</label>
 				<div class="col-sm-9">
-					<input type="text" name="connstring" placeholder="连接字符串" class="col-xs-10">
+					<input type="text" name="connstring" placeholder="${request._(u'连接字符串')}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					说明
+					${request._(u'说明')}
 				</label>
 				<div class="col-sm-9">
-					<textarea type="text" name="description" placeholder="说明" class="col-xs-10"></textarea>
+					<textarea type="text" name="description" placeholder="${request._(u'说明')}" class="col-xs-10"></textarea>
 				</div>
 			</div>
 
 			<div style="display:none" class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					选项
+					${request._(u'选项')}
 				</label>
 				<div class="col-sm-9">
-					<textarea type="text" id="form-field-1" name="options" placeholder="其它配置项" class="col-xs-10"></textarea>
+					<textarea type="text" id="form-field-1" name="options" placeholder="${request._(u'其它配置项')}"
+							  class="col-xs-10"></textarea>
 				</div>
 			</div>
 			<input type="hidden" id="submit-action" name="action" value=""/>
@@ -117,8 +118,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button id="test-conn" type="button" class="btn btn-default no-border">测试连接</button>
-        <button id="save-conn" type="button" class="btn btn-primary no-border">保存</button>
+        <button id="test-conn" type="button" class="btn btn-default no-border">${request._(u'测试连接')}</button>
+        <button id="save-conn" type="button" class="btn btn-primary no-border">${request._(u'保存')}</button>
       </div>
     </div>
   </div>
@@ -167,7 +168,7 @@ function editDB(){
         $('#myModal').modal();
     }
     var fail = function(error){
-        alert("加载失败!");
+        alert("${request._(u'加载失败!')}");
     }
     $.when(request).then(success, fail);
 }
@@ -187,7 +188,7 @@ function testConn(){
 	var paras = $('#new-conn').serialize();
 	$.getJSON('/management/action', paras, function(response){
 		if(response.success == 1){
-			alert("连接成功!");
+			alert("${request._(u'连接成功!')}");
         }
 		else {
 			alert(response.message);

@@ -26,10 +26,12 @@ def main(global_config, **settings):
     config = Configurator(settings=settings)
 
     from tap.security import groupfinder, get_user, get_user_id
+    from tap.common.character import _t
 
     # Attach shortcut property
     config.add_request_method(get_user, 'user', reify=True)
     config.add_request_method(get_user_id, 'userid', reify=True)
+    config.add_request_method(_t, '_')
 
     # Template
     config.include('pyramid_mako')
@@ -54,6 +56,8 @@ def add_route(config):
 
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_route('home', '/', factory='tap.security.AuthControl')
+    config.add_route('language', '/management/language',
+                     factory='tap.security.AuthControl')
     config.add_route('docs', '/management/docs',
                      factory='tap.security.AuthControl')
     config.add_route('apps', '/management/applications',

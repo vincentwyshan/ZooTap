@@ -11,6 +11,10 @@ from pyramid.i18n import TranslationStringFactory
 _ = TranslationStringFactory('tap')
 
 
+def _t(request, trans):
+    return request.localizer.translate(_(trans))
+
+
 def _cs(obj, encoding='utf8'):
     """
     convert any object to string object.

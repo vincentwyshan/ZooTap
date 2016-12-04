@@ -104,17 +104,26 @@
                     </a>
 
                     <ul class="user-menu dropdown-menu-right dropdown-menu dropdown-yellow dropdown-caret dropdown-close">
-                        <!--<li>
-                            <a href="/management/profile?${request.user.id}">
-                                <i class="ace-icon fa fa-user"></i>
-                                信息
+                        <li>
+                            <a href="/management/language?lang=en"
+                               style="${'color:#2b7dbc' if request.localizer.locale_name =='en' else 'opacity:0.5'}">
+                                <i class="ace-icon fa fa-language"></i>
+                                English
                             </a>
-                        </li>-->
+                        </li>
+                        <li>
+                            <a href="/management/language?lang=zh_CN"
+                               style="${'color:#2b7dbc' if request.localizer.locale_name =='zh_CN' else 'opacity:0.5'}">
+                                <i class="ace-icon fa fa-language"></i>
+                                中文
+                            </a>
+                        </li>
 
+                        <li class="divider"></li>
                         <li>
                             <a href="/management/logout">
                                 <i class="ace-icon fa fa-power-off"></i>
-                                ${_(u'登出')}
+                                ${request._(u'登出')}
                             </a>
                         </li>
                     </ul>
@@ -149,7 +158,7 @@
              <li class="${'active' if active_home else ''} hover">
                 <a href="/" class="dropdown-toggle" onclick="javascript: window.location.href='/';">
                     <i class="menu-icon fa fa-home"></i>
-                    <span class="menu-text">${_(u'首页')}</span>
+                    <span class="menu-text">${request._(u'首页')}</span>
 
                 </a>
             </li>
@@ -157,7 +166,7 @@
             <li class="${'active' if active_database else ''} hover">
                 <a href="/management/database">
                     <i class="menu-icon fa fa-database"></i>
-                    <span class="menu-text"> ${_(u'数据库')} </span>
+                    <span class="menu-text"> ${request._(u'数据库')} </span>
                 </a>
 
             </li>
@@ -165,7 +174,7 @@
             <li class="${'active' if active_project else ''} hover">
                 <a href="/management/project" class="dropdown-toggle" onclick="javascript: window.location.href='/management/project';">
                     <i class="menu-icon fa fa-flask"></i>
-                    <span class="menu-text"> ${_("API")} </span>
+                    <span class="menu-text"> ${request._("API")} </span>
 
                     <b class="arrow fa fa-angle-right"></b>
                 </a>
@@ -190,7 +199,7 @@
                 <a href="/management/task" class="dropdown-toggle"
                    onclick="javascript: window.location.href='/management/job';">
                     <i class="menu-icon fa fa-calendar-check-o"></i>
-                    <span class="menu-text"> ${_('Task')} </span>
+                    <span class="menu-text"> ${request._('Task')} </span>
                     <b class="arrow fa fa-angle-right"></b>
                 </a>
 
@@ -214,7 +223,7 @@
             <li class="hover ${'active' if active_client else ''}">
                 <a href="/management/client" class="dropdown-toggle" onclick="javascript: window.location.href='/management/client';">
                     <i class="menu-icon fa fa-laptop"></i>
-                    <span class="menu-text"> ${_(u'客户端')} </span>
+                    <span class="menu-text"> ${request._(u'客户端')} </span>
 
                 </a>
             </li>
@@ -222,7 +231,7 @@
             <li class="hover ${'active' if active_users else ''}">
                 <a href="/management/user/list" class="dropdown-toggle" onclick="javascript: window.location.href='/management/user/list';">
                     <i class="menu-icon fa fa-address-book"></i>
-                    <span class="menu-text"> ${_(u'管理')} </span>
+                    <span class="menu-text"> ${request._(u'管理')} </span>
 
                 </a>
             </li>
@@ -316,7 +325,7 @@
             </span>
             <span class="bigger-120">
                 <a href="/static/doc/index.html">
-                    <span class="menu-text"> 文档 </span>
+                    <span class="menu-text"> ${request._(u'文档')} </span>
                 </a>
             </span>
         </div>

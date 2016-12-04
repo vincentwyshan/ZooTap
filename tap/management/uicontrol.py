@@ -6,6 +6,7 @@ import re
 
 import transaction
 
+from tap.common.character import _, _t
 from tap.models import (
     DBSession,
     TapProject,
@@ -18,9 +19,16 @@ from tap.models import (
 
 def gen_breadcrumbs(request):
     result = []
+
+    trans_db = _t(request, _(u'数据库'))
+    trans_project = _t(request, _(u'项目'))
+    trans_client = _t(request, _(u'客户端'))
+    trans_userlist = _t(request, _(u'用户列表'))
+    trans_index = _t(request, _(u'首页'))
+
     if request.path.startswith('/management/database'):
         result.append(
-            {"url": '/management/database', "class": "active", "text": u"数据库"}
+            {"url": '/management/database', "class": "active", "text": trans_db}
         )
         if request.matchdict.get('dbconn_id') is not None:
             with transaction.manager:
@@ -31,14 +39,14 @@ def gen_breadcrumbs(request):
                 )
     elif request.path == '/management/project':
         result.append(
-            {"url": '/management/project', "class": "active", "text": u"项目"}
+            {"url": '/management/project', "class": "active", "text": trans_project}
         )
     elif re.match(ur"/management/project/\d+", request.path):
         project_id = re.findall(r'\d+', request.path)[0]
         with transaction.manager:
             project = DBSession.query(TapProject).get(project_id)
             result.append(
-                {"url": '/management/project', "class": "", "text": u"项目"},
+                {"url": '/management/project', "class": "", "text": trans_project},
             )
             result.append(
                 {"class": "active", "text": project.fullname},
@@ -48,7 +56,7 @@ def gen_breadcrumbs(request):
         with transaction.manager:
             api = DBSession.query(TapApi).get(api_id)
             result.append(
-                {"url": '/management/project', "class": "", "text": u"项目"},
+                {"url": '/management/project', "class": "", "text": trans_project},
             )
             result.append(
                 {"url": '/management/project/%s' % api.project.id,
@@ -64,7 +72,7 @@ def gen_breadcrumbs(request):
                 client_id = request.matchdict['client_id']
                 client = DBSession.query(TapApiClient).get(client_id)
                 result.append(
-                    {"url": '/management/client', "text": u"客户端"}
+                    {"url": '/management/client', "text": trans_client}
                 )
                 result.append(
                     {"class": 'active', "text": client.name}
@@ -72,11 +80,11 @@ def gen_breadcrumbs(request):
         else:
             result.append(
                 {"url": '/management/client', 'class': "active",
-                 "text": u"客户端"}
+                 "text": trans_client}
             )
     elif re.match(ur"/management/user/", request.path):
         result.append(
-            {"url": '/management/user/list', "text": u"用户列表"}
+            {"url": '/management/user/list', "text": trans_userlist}
         )
         if 'user_id' in request.matchdict:
             with transaction.manager:
@@ -87,7 +95,7 @@ def gen_breadcrumbs(request):
                 )
     else:
         result.append(
-            {"url": '/', 'class': 'active', "text": u"首页"}
+            {"url": '/', 'class': 'active', "text": trans_index}
         )
     return result
 

@@ -5,7 +5,7 @@ $(function () {
             zoomType: 'x'
         },
         title: {
-            text: '响应时间'
+            text: "${request._(u'响应时间')}"
         },
         credits: {
             enabled: false

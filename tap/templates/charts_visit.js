@@ -8,7 +8,7 @@ $(function () {
             enabled: false
         },
         title: {
-            text: '访问量'
+            text: "${request._(u'访问量')}"
         },
         subtitle: {
             text: ''
@@ -21,7 +21,7 @@ $(function () {
         },
         yAxis: {
             title: {
-                text: '(次)'
+                text: "(${request._(u'次')})"
             },
             min: 0,
             minorGridLineWidth: 0,
@@ -29,7 +29,7 @@ $(function () {
             alternateGridColor: null,
         },
         tooltip: {
-            valueSuffix: ' 次'
+            valueSuffix: " ${request._(u'次')}"
         },
         plotOptions: {
             spline: {

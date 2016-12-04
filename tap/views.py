@@ -24,7 +24,7 @@ import transaction
 import xlrd
 from sqlalchemy import func, or_
 
-from tap.common.character import _
+from tap.common.character import _t, _
 from tap.security import valid_password
 from tap.service.common import dict2api, api2dict
 from tap.service.common import TapEncoder, measure
@@ -124,9 +124,6 @@ def common_vars(request):
         project_names=project_names
     )
     result.update(gen_active(request))
-
-    # i18n translate
-    result['_'] = lambda trans: request.localizer.translate(_(trans))
     return result
 
 
@@ -143,6 +140,16 @@ class Management(object):
             context.update(common_vars(self.request))
             return render_to_response('templates/home.html', context,
                                       request=self.request)
+
+    @view_config(route_name='language', permission="view")
+    def language(self):
+        lang = self.request.params.get('lang')
+        response = HTTPFound(self.request.referrer)
+        if lang == 'zh_CN':
+            response.set_cookie('_LOCALE_', 'zh_CN', max_age=3600*24*365)
+        else:
+            response.set_cookie('_LOCALE_', 'en', max_age=3600*24*365)
+        return response
 
     @view_config(route_name='docs', permission="view")
     def docs(self):
@@ -815,9 +822,11 @@ class ChartsGen(object):
             query = query.limit(max_points)
 
         visit_data = []
-        visit = dict(name=u'访问量', data=visit_data, color='#7cb5ec')
+        visit = dict(name=_t(self.request, _(u'访问量')),
+                     data=visit_data, color='#7cb5ec')
         error_data = []
-        error = dict(name=u'错误量', data=error_data, color='#d7a59d')
+        error = dict(name=_t(self.request, _(u'错误量')),
+                     data=error_data, color='#d7a59d')
         for stat in query:
             occurrence_time = time.mktime(stat.occurrence_time.timetuple())
             occurrence_time += (8 * 3600)
