@@ -25,7 +25,7 @@ import xlrd
 from sqlalchemy import func, or_
 
 from tap.common.character import _t, _
-from tap.security import valid_password
+from tap.security.auth import valid_password
 from tap.service.common import dict2api, api2dict
 from tap.service.common import TapEncoder, measure
 from tap.service.common import conn_get, stmt_split
@@ -33,25 +33,11 @@ from tap.service.common import show_tables, Paginator
 from tap.service.api import Program
 from tap.service import exceptions
 from tap.service.tcaptcha import gen_captcha, validate
-from tap.management.uicontrol import (
-    gen_breadcrumbs, gen_project_names,  gen_active
-)
+from tap.management.uicontrol import universal_vars
 from tap.models import (
-    DBSession,
-    TapUser,
-    TapDBConn,
-    TapProject,
-    TapApi,
-    TapApiClient,
-    TapApiAuth,
-    TapApiAccessKey,
-    TapApiRelease,
-    TapApiStats,
-    TapApiErrors,
-    TapUserPermission,
-    TapPermission,
-    TapAsyncTask,
-    TapApiClientCustomAuth,
+    DBSession, TapUser, TapDBConn, TapProject, TapApi, TapApiClient,
+    TapApiAuth, TapApiAccessKey, TapApiRelease, TapApiStats, TapApiErrors,
+    TapUserPermission, TapPermission, TapAsyncTask, TapApiClientCustomAuth,
     CaptchaCode,
 )
 
@@ -116,17 +102,6 @@ def logout(request):
     return HTTPFound(location='/', headers=headers)
 
 
-def common_vars(request):
-    top_breadcrumbs = gen_breadcrumbs(request)
-    project_names = gen_project_names(request)
-    result = dict(
-        top_breadcrumbs=top_breadcrumbs,
-        project_names=project_names
-    )
-    result.update(gen_active(request))
-    return result
-
-
 class Management(object):
     def __init__(self, request):
         self.request = request
@@ -137,7 +112,7 @@ class Management(object):
             projects = DBSession.query(TapProject)\
                 .order_by(TapProject.id.desc())
             context = dict(pagename=u' Tap', projects=projects)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response('templates/home.html', context,
                                       request=self.request)
 
@@ -153,21 +128,21 @@ class Management(object):
 
     @view_config(route_name='docs', permission="view")
     def docs(self):
-        context = common_vars(self.request)
+        context = universal_vars(self.request)
         context['pagename'] = u' Tap - 文档'
         return render_to_response('templates/docs.html', context,
                                   request=self.request)
 
     @view_config(route_name='apps', permission="view")
     def apps(self):
-        context = common_vars(self.request)
+        context = universal_vars(self.request)
         context['pagename'] = u' Tap - Applications'
         return render_to_response('templates/applications.html', context,
                                   request=self.request)
 
     @view_config(route_name='apps_mobilehosting', permission="view")
     def apps_hosting(self):
-        context = common_vars(self.request)
+        context = universal_vars(self.request)
         context['pagename'] = u' Tap - Applications'
         return render_to_response('templates/applications_mobileapp.html',
                                   context, request=self.request)
@@ -178,7 +153,7 @@ class Management(object):
         with transaction.manager:
             users = DBSession.query(TapUser)
             context = dict(pagename=u"权限管理", users=users)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/user_list.html",
                                       context, request=self.request)
 
@@ -196,7 +171,7 @@ class Management(object):
             context = dict(pagename=u"权限管理",
                            user_permissions=user_permissions,
                            permissions=permissions, user=user)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/user_edit.html",
                                       context, request=self.request)
 
@@ -205,7 +180,7 @@ class Management(object):
         with transaction.manager:
             conns = DBSession.query(TapDBConn).order_by(TapDBConn.id.desc())
             context = dict(conns=conns, pagename=u"数据库")
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response('templates/database.html', context,
                                       request=self.request)
 
@@ -221,7 +196,7 @@ class Management(object):
             context = dict(dbconn=dbconn, pagename=u"%s - 数据库" % dbconn.name,
                            tablelist=show_tables(dbconn.dbtype, cursor))
 
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/database_view.html",
                                       context, request=self.request)
 
@@ -284,8 +259,8 @@ class Management(object):
         with transaction.manager:
             projects = DBSession.query(TapProject).order_by(TapProject.id.desc())
             context = dict(projects=projects, pagename=u'项目')
-            context.update(common_vars(self.request))
-            return render_to_response('templates/project.html', context,
+            context.update(universal_vars(self.request))
+            return render_to_response('tap:templates/api/project.html', context,
                                       request=self.request)
 
     @view_config(route_name="project_detail", permission="view")
@@ -352,8 +327,8 @@ class Management(object):
                            apis=apis, paginator=paginator, q=q,
                            spark_data=spark_data, spark_time=spark_time,
                            sort_field=sort_field, sort_direction=sort_direction)
-            context.update(common_vars(self.request))
-            return render_to_response('templates/project_detail.html',
+            context.update(universal_vars(self.request))
+            return render_to_response('tap:templates/api/project_detail.html',
                                       context, request=self.request)
 
     @view_config(route_name="api_config", permission="view")
@@ -393,7 +368,7 @@ class Management(object):
             context = dict(pagename=u"%s - 配置" % api.name, conns=conns,
                            api=api, active_config=True, dbconn=dbconn,
                            dbconn_secondary=dbconn_secondary)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/api_config.html", context,
                                       request=self.request)
 
@@ -433,7 +408,7 @@ class Management(object):
                            active_stats=True, clients=clients,
                            category=category, paginator=paginator,
                            error_list=error_list, client_id=client_id)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/api_stats.html", context,
                                       request=self.request)
 
@@ -464,7 +439,7 @@ class Management(object):
                            active_cachemanage=True, releases=releases,
                            selected=selected, api_selected=api_selected,
                            math=math)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/api_cachemanage.html",
                                       context, request=self.request)
 
@@ -507,7 +482,7 @@ class Management(object):
                            active_release=True, current_version=current_version,
                            releases=releases, paginator=paginator,
                            release_db=release_db, release_content=release_content)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/api_release.html", context,
                                       request=self.request)
 
@@ -520,7 +495,7 @@ class Management(object):
             release = dict2api(release)
 
             context = dict(pagename=u"", api=release)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/api_release_version.html",
                                       context, request=self.request)
 
@@ -530,7 +505,7 @@ class Management(object):
             clients = DBSession.query(TapApiClient)
 
             context = dict(pagename=u"客户端管理", clients=clients)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/client_home.html", context,
                                       request=self.request)
 
@@ -572,7 +547,7 @@ class Management(object):
 
             context = dict(pagename=u"%s - 客户端" % client.name,
                            project_apis=project_apis, client=client)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             context.update(self.auth_detail())
 
             return render_to_response("templates/client_detail.html",
@@ -594,7 +569,7 @@ class Management(object):
             context = dict(pagename=u"%s - 授权" % api.name,
                            auth_list=auth_list, api=api, active_auth=True,
                            clients=clients)
-            context.update(common_vars(self.request))
+            context.update(universal_vars(self.request))
             return render_to_response("templates/api/auth_home.html", context,
                                       request=self.request)
 
@@ -927,7 +902,7 @@ class WidgetExcel(object):
         template = "templates/database_xlsupload.html"
         dbconn_id = self.request.params['dbconn_id']
 
-        context = common_vars(self.request)
+        context = universal_vars(self.request)
         context.update(dict(
             pagename="Excel Upload", dbconn_id=dbconn_id
         ))
@@ -977,11 +952,4 @@ class WidgetExcel(object):
             return response
 
 
-class TaskProject(object):
-    def __init__(self, request):
-        self.request = request
 
-    @view_config(route_name="task_project_index")
-    def upload_view(self):
-        with transaction.manager:
-            pass

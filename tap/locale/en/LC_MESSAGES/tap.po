@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE 1.0\n"
-"POT-Creation-Date: 2016-12-04 13:39+0800\n"
-"PO-Revision-Date: 2016-12-04 13:41+0800\n"
+"POT-Creation-Date: 2016-12-06 22:30+0800\n"
+"PO-Revision-Date: 2016-12-06 22:32+0800\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: en\n"
@@ -17,27 +17,20 @@ msgstr ""
 "X-Generator: Poedit 1.8.11\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: tap/views.py:815
-msgid "访问量"
-msgstr "Visits"
-
-#: tap/views.py:818
-msgid "错误量"
-msgstr "Errors"
-
 #: tap/common/i18nwords.py:7
 msgid "响应时间"
-msgstr "Elapse"
+msgstr "Response Time"
 
-#: tap/management/uicontrol.py:23 tap/templates/base.html:161
+#: tap/management/uicontrol.py:23 tap/templates/base.html:170
 msgid "数据库"
 msgstr "Database"
 
-#: tap/management/uicontrol.py:24 tap/templates/project.html:20
+#: tap/management/uicontrol.py:24 tap/templates/api/project.html:20
+#: tap/templates/task/projectlist.html:20
 msgid "项目"
 msgstr "Project"
 
-#: tap/management/uicontrol.py:25 tap/templates/base.html:218
+#: tap/management/uicontrol.py:25 tap/templates/base.html:233
 msgid "客户端"
 msgstr "Client"
 
@@ -45,31 +38,36 @@ msgstr "Client"
 msgid "用户列表"
 msgstr "Accounts"
 
-#: tap/management/uicontrol.py:27 tap/templates/base.html:153
+#: tap/management/uicontrol.py:27 tap/templates/base.html:162
 msgid "首页"
 msgstr "Index"
 
-#: tap/templates/base.html:118
+#: tap/templates/base.html:127
 msgid "登出"
 msgstr "Logout"
 
-#: tap/templates/base.html:169
+#: tap/templates/base.html:177
 msgid "API"
 msgstr "API"
 
-#: tap/templates/base.html:194
+#: tap/templates/base.html:202
 msgid "Task"
 msgstr "Task"
 
-#: tap/templates/base.html:226
+#: tap/templates/base.html:210
+msgid "服务器"
+msgstr "Host"
+
+#: tap/templates/base.html:241
 msgid "管理"
 msgstr "Account"
 
-#: tap/templates/base.html:320
+#: tap/templates/base.html:335
 msgid "文档"
 msgstr "Document"
 
-#: tap/templates/database.html:9 tap/templates/project.html:9
+#: tap/templates/database.html:9 tap/templates/api/project.html:9
+#: tap/templates/task/projectlist.html:9
 msgid "添加"
 msgstr "Add"
 
@@ -86,8 +84,10 @@ msgid "停止编辑"
 msgstr "End Editting"
 
 #: tap/templates/database.html:29 tap/templates/database.html:67
-#: tap/templates/database.html:71 tap/templates/project.html:21
-#: tap/templates/project.html:60 tap/templates/project.html:66
+#: tap/templates/database.html:71 tap/templates/api/project.html:21
+#: tap/templates/api/project.html:60 tap/templates/api/project.html:66
+#: tap/templates/task/projectlist.html:21
+#: tap/templates/task/projectlist.html:66
 msgid "名称"
 msgstr "Name"
 
@@ -95,17 +95,18 @@ msgstr "Name"
 msgid "DB类型"
 msgstr "Database Type"
 
-#: tap/templates/database.html:31 tap/templates/project.html:22
+#: tap/templates/database.html:31 tap/templates/api/project.html:22
+#: tap/templates/task/projectlist.html:22
 msgid "创建者"
 msgstr "Creator"
 
-#: tap/templates/database.html:32
+#: tap/templates/database.html:32 tap/templates/task/projectlist.html:23
 #, fuzzy
 msgid "时间"
 msgstr "Elapse"
 
 #: tap/templates/database.html:33 tap/templates/database.html:92
-#: tap/templates/database.html:95 tap/templates/project.html:69
+#: tap/templates/database.html:95 tap/templates/api/project.html:69
 msgid "连接字符串"
 msgstr "Connection String"
 
@@ -118,7 +119,9 @@ msgid "选择DB类型"
 msgstr "Choose DB type"
 
 #: tap/templates/database.html:101 tap/templates/database.html:104
-#: tap/templates/project.html:75 tap/templates/project.html:78
+#: tap/templates/api/project.html:75 tap/templates/api/project.html:78
+#: tap/templates/task/projectlist.html:75
+#: tap/templates/task/projectlist.html:78
 msgid "说明"
 msgstr "Description"
 
@@ -134,7 +137,8 @@ msgstr "Other options"
 msgid "测试连接"
 msgstr "Test connecting"
 
-#: tap/templates/database.html:123 tap/templates/project.html:87
+#: tap/templates/database.html:123 tap/templates/api/project.html:87
+#: tap/templates/task/projectlist.html:86
 msgid "保存"
 msgstr "Save"
 
@@ -150,17 +154,37 @@ msgstr "Loading successful!"
 msgid "耗时"
 msgstr "Elapse"
 
-#: tap/templates/project.html:23
+#: tap/templates/api/project.html:23
 msgid "创建时间"
 msgstr "Create Time"
 
-#: tap/templates/project.html:50
+#: tap/templates/api/project.html:50 tap/templates/task/projectlist.html:50
 msgid "创建项目"
 msgstr "Create Project"
 
-#: tap/templates/project.html:57
+#: tap/templates/api/project.html:57 tap/templates/task/projectlist.html:57
 msgid "项目标识"
 msgstr "Identify Marker"
+
+#: tap/templates/task/projectlist.html:60
+msgid "项目名"
+msgstr "Project Name"
+
+#: tap/templates/task/projectlist.html:69
+msgid "项目全名"
+msgstr "Project Full Name"
+
+#: tap/view/apis.py:800
+msgid "访问量"
+msgstr "Visits"
+
+#: tap/view/apis.py:803
+msgid "错误量"
+msgstr "Errors"
+
+#: tap/view/tasks.py:29
+msgid "Task - Projects"
+msgstr ""
 
 #~ msgid ""
 #~ "测试，长句\r\n"

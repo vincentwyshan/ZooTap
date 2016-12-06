@@ -18,7 +18,7 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 
 class TapCommand(distutils.cmd.Command):
     """
-    Customize command to run Pylint on all Python source files.
+    Customize commands for setup scripts.
     """
 
     description = 'Tap commands'

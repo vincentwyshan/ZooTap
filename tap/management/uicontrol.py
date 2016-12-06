@@ -17,62 +17,89 @@ from tap.models import (
 )
 
 
-def gen_breadcrumbs(request):
-    result = []
+class Breadcrumbs(object):
+    def __init__(self, request):
+        self.request = request
+        self.trans_db = _t(request, _(u'数据库'))
+        self.trans_project = _t(request, _(u'项目'))
+        self.trans_client = _t(request, _(u'客户端'))
+        self.trans_userlist = _t(request, _(u'用户列表'))
+        self.trans_index = _t(request, _(u'首页'))
 
-    trans_db = _t(request, _(u'数据库'))
-    trans_project = _t(request, _(u'项目'))
-    trans_client = _t(request, _(u'客户端'))
-    trans_userlist = _t(request, _(u'用户列表'))
-    trans_index = _t(request, _(u'首页'))
+    def database(self):
+        if not self.request.path.startswith('/management/database'):
+            return
 
-    if request.path.startswith('/management/database'):
-        result.append(
-            {"url": '/management/database', "class": "active", "text": trans_db}
-        )
-        if request.matchdict.get('dbconn_id') is not None:
+        result = [(
+            {"url": '/management/database', "class": "active",
+             "text": self.trans_db}
+        )]
+        if self.request.matchdict.get('dbconn_id') is not None:
             with transaction.manager:
-                dbconn_id = request.matchdict['dbconn_id']
+                dbconn_id = self.request.matchdict['dbconn_id']
                 dbconn = DBSession.query(TapDBConn).get(dbconn_id)
                 result.append(
                     {"class": "active", "text": dbconn.name}
                 )
-    elif request.path == '/management/project':
-        result.append(
-            {"url": '/management/project', "class": "active", "text": trans_project}
-        )
-    elif re.match(ur"/management/project/\d+", request.path):
-        project_id = re.findall(r'\d+', request.path)[0]
+        return result
+
+    def project_list(self):
+        if self.request.path != '/management/project':
+            return
+        return [(
+            {"url": '/management/project', "class": "active",
+             "text": self.trans_project}
+        )]
+
+    def project_detail(self):
+        if not re.match(ur"/management/project/\d+", self.request.path):
+            return
+
+        project_id = re.findall(r'\d+', self.request.path)[0]
+        result = []
         with transaction.manager:
             project = DBSession.query(TapProject).get(project_id)
             result.append(
-                {"url": '/management/project', "class": "", "text": trans_project},
+                {"url": '/management/project', "class": "",
+                 "text": self.trans_project},
             )
             result.append(
                 {"class": "active", "text": project.fullname},
             )
-    elif re.match(ur"/management/api/\d+", request.path):
-        api_id = re.findall(r'\d+', request.path)[0]
+        return result
+
+    def api(self):
+        if not re.match(ur"/management/api/\d+", self.request.path):
+            return
+
+        api_id = re.findall(r'\d+', self.request.path)[0]
+        result = []
         with transaction.manager:
             api = DBSession.query(TapApi).get(api_id)
-            result.append(
-                {"url": '/management/project', "class": "", "text": trans_project},
+            self.result.append(
+                {"url": '/management/project', "class": "",
+                 "text": self.trans_project},
             )
-            result.append(
+            self.result.append(
                 {"url": '/management/project/%s' % api.project.id,
                  "class": "",  "text": api.project.fullname},
             )
-            result.append(
+            self.result.append(
                 {"class": "active", "text": api.fullname}
             )
-    elif re.match(ur"/management/client", request.path):
+        return result
 
-        if 'client_id' in request.matchdict:
+    def client(self):
+        if not re.match(ur"/management/client", self.request.path):
+            return
+
+        result = []
+        if 'client_id' in self.request.matchdict:
             with transaction.manager:
-                client_id = request.matchdict['client_id']
+                client_id = self.request.matchdict['client_id']
                 client = DBSession.query(TapApiClient).get(client_id)
                 result.append(
-                    {"url": '/management/client', "text": trans_client}
+                    {"url": '/management/client', "text": self.trans_client}
                 )
                 result.append(
                     {"class": 'active', "text": client.name}
@@ -80,24 +107,45 @@ def gen_breadcrumbs(request):
         else:
             result.append(
                 {"url": '/management/client', 'class': "active",
-                 "text": trans_client}
+                 "text": self.trans_client}
             )
-    elif re.match(ur"/management/user/", request.path):
-        result.append(
-            {"url": '/management/user/list', "text": trans_userlist}
-        )
-        if 'user_id' in request.matchdict:
+        return result
+
+    def user(self):
+        if not re.match(ur"/management/user/", self.request.path):
+            return
+        result = [(
+            {"url": '/management/user/list', "text": self.trans_userlist}
+        )]
+        if 'user_id' in self.request.matchdict:
             with transaction.manager:
-                user_id = request.matchdict['user_id']
+                user_id = self.request.matchdict['user_id']
                 user = DBSession.query(TapUser).get(user_id)
                 result.append(
                     {"class": 'active', 'text': user.name}
                 )
-    else:
-        result.append(
-            {"url": '/', 'class': 'active', "text": trans_index}
+        return result
+
+    def task_project(self):
+        if not re.match(ur"/management/task", self.request.path):
+            return
+        return [
+            {"class": "active", "text": self.trans_project}
+        ]
+
+    def result(self):
+        data = (
+            self.database() or self.project_list() or
+            self.project_detail() or self.api() or self.client() or
+            self.user()
         )
-    return result
+        if not data:
+            data = [{"url": '/', 'class': 'active', "text": self.trans_project}]
+        return data
+
+
+def gen_breadcrumbs(request):
+    return Breadcrumbs(request).result()
 
 
 def gen_active(request):
@@ -139,3 +187,15 @@ def gen_project_names(request):
                 dict(id=project.id, name=project.fullname)
             )
         return result
+
+
+def universal_vars(request):
+    top_breadcrumbs = gen_breadcrumbs(request)
+    project_names = gen_project_names(request)
+    result = dict(
+        top_breadcrumbs=top_breadcrumbs,
+        project_names=project_names
+    )
+    result.update(gen_active(request))
+    return result
+

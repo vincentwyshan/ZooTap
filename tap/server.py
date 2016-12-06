@@ -110,13 +110,17 @@ def add_route(config):
     config.add_route("charts", "/management/charts")
 
     # Task
-    config.add_route("task_project_index", "/management/task")
+    add_task_route(config)
 
     # 上传Excel
     # TODO 未设置权限
     config.add_route("upload_excel", "/management/tools/upload-excel")
     config.add_route("upload_rcv", "/management/tools/upload-file")
     config.add_route("upload_progress", "/management/tools/upload-progress")
+
+
+def add_task_route(config):
+    config.add_route("task_project_index", "/management/task")
 
 
 def add_srv_route(config):

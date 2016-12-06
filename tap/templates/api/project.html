@@ -1,11 +1,11 @@
-<%inherit file="base.html" />
+<%inherit file="../base.html" />
 
 <%block name="pagecontent">
 <div class="row" style="height:53px">
     <a data-toggle="modal" href="#write" data-target="#myModal" class="btn-new-mail pull-right">
 		<span class="btn btn-primary no-border">
 			<i class="ace-icon fa fa-plus bigger-130"></i>
-			<span class="bigger-110">添加</span>
+			<span class="bigger-110">${request._(u'添加')}</span>
 		</span>
 	</a>
 
@@ -16,10 +16,10 @@
 		<thead>
 		<tr>
 			<th>#</th>
-			<th>项目</th>
-			<th>名称</th>
-			<th>创建者</th>
-			<th>时间</th>
+			<th>${request._(u'项目')}</th>
+			<th>${request._(u'名称')}</th>
+			<th>${request._(u'创建者')}</th>
+			<th>${request._(u'创建时间')}</th>
 		</tr>
 		</thead>
 		<tbody>
@@ -46,43 +46,44 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">创建项目</h4>
+        <h4 class="modal-title" id="myModalLabel">${request._(u'创建项目')}</h4>
       </div>
       <div class="modal-body">
         <form class="form-horizontal" id="post-form" role="form">
 			<!-- #section:elements.form -->
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					项目标识
+					${request._(u'项目标识')}
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="name" placeholder="项目名" class="col-xs-10">
+					<input type="text" id="form-field-1" name="name" placeholder="${request._(u"名称")}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					名称
+					${request._(u"名称")}
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="fullname" placeholder="项目全名" class="col-xs-10">
+					<input type="text" id="form-field-1" name="fullname" placeholder="${request._(u"连接字符串")}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					说明
+					${request._(u"说明")}
 				</label>
 				<div class="col-sm-9">
-					<textarea type="text" id="form-field-1" name="description" placeholder="说明" class="col-xs-10"></textarea>
+					<textarea type="text" id="form-field-1" name="description" placeholder="${request._(u"说明")}"
+							  class="col-xs-10"></textarea>
 				</div>
 			</div>
-			<input type="hidden" id="submit-action" name="action" value="TaskProjectCreate"/>
+			<input type="hidden" id="submit-action" name="action" value="projectsave"/>
 
         </form>
       </div>
       <div class="modal-footer">
-        <button id="save-project" type="button" class="btn btn-primary no-border">保存</button>
+        <button id="save-project" type="button" class="btn btn-primary no-border">${request._(u"保存")}</button>
       </div>
     </div>
   </div>

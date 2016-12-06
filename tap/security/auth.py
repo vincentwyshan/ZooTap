@@ -1,4 +1,7 @@
 #coding=utf8
+"""
+Authentication and Authority
+"""
 
 import datetime
 import os

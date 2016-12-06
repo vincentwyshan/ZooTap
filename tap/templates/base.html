@@ -168,7 +168,6 @@
                     <i class="menu-icon fa fa-database"></i>
                     <span class="menu-text"> ${request._(u'数据库')} </span>
                 </a>
-
             </li>
 
             <li class="${'active' if active_project else ''} hover">
@@ -195,27 +194,34 @@
                 %endif
             </li>
 
-            <li class="hover ${'active' if active_jobs else ''}">
+            <li class="hover ${'active' if active_task else ''}">
                 <a href="/management/task" class="dropdown-toggle"
-                   onclick="javascript: window.location.href='/management/job';">
+                   onclick="javascript: window.location.href='/management/task';">
                     <i class="menu-icon fa fa-calendar-check-o"></i>
                     <span class="menu-text"> ${request._('Task')} </span>
                     <b class="arrow fa fa-angle-right"></b>
                 </a>
 
-                %if project_names:
                 <ul class="submenu">
+                    <li class="hover ">
+                        <a href="/management/task/hosts">
+                            <i class="menu-icon fa fa-dot-circle-o"></i>
+                            ${request._(u'服务器')}
+                        </a>
+                        <b class="arrow"></b>
+                    </li>
+                %if task_project_names:
                     %for project in project_names:
                     <li class="hover ${'active' if (current_project_id==project['id']) else ''}">
-                        <a href="/management/project/${project['id']}">
+                        <a href="/management/task/project/${project['id']}">
                             <i class="menu-icon fa fa-dot-circle-o"></i>
                             ${project['name']}
                         </a>
                         <b class="arrow"></b>
                     </li>
                     %endfor
-                </ul>
                 %endif
+                </ul>
 
             </li>
 

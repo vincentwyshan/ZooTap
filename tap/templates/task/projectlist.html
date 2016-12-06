@@ -1,4 +1,4 @@
-<%inherit file="base.html" />
+<%inherit file="../base.html" />
 
 <%block name="pagecontent">
 <div class="row" style="height:53px">
@@ -19,7 +19,7 @@
 			<th>${request._(u'项目')}</th>
 			<th>${request._(u'名称')}</th>
 			<th>${request._(u'创建者')}</th>
-			<th>${request._(u'创建时间')}</th>
+			<th>${request._(u'时间')}</th>
 		</tr>
 		</thead>
 		<tbody>
@@ -56,34 +56,33 @@
 					${request._(u'项目标识')}
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="name" placeholder="${request._(u"名称")}" class="col-xs-10">
+					<input type="text" id="form-field-1" name="name" placeholder="${request._(u'项目名')}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					${request._(u"名称")}
+					${request._(u'名称')}
 				</label>
 				<div class="col-sm-9">
-					<input type="text" id="form-field-1" name="fullname" placeholder="${request._(u"连接字符串")}" class="col-xs-10">
+					<input type="text" id="form-field-1" name="fullname" placeholder="${request._(u'项目全名')}" class="col-xs-10">
 				</div>
 			</div>
 
 			<div class="form-group">
 				<label class="col-sm-3 control-label no-padding-right" for="form-field-1">
-					${request._(u"说明")}
+					${request._(u'说明')}
 				</label>
 				<div class="col-sm-9">
-					<textarea type="text" id="form-field-1" name="description" placeholder="${request._(u"说明")}"
-							  class="col-xs-10"></textarea>
+					<textarea type="text" id="form-field-1" name="description" placeholder="${request._(u'说明')}" class="col-xs-10"></textarea>
 				</div>
 			</div>
-			<input type="hidden" id="submit-action" name="action" value="projectsave"/>
+			<input type="hidden" id="submit-action" name="action" value="TaskProjectCreate"/>
 
         </form>
       </div>
       <div class="modal-footer">
-        <button id="save-project" type="button" class="btn btn-primary no-border">${request._(u"保存")}</button>
+        <button id="save-project" type="button" class="btn btn-primary no-border">${request._(u'保存')}</button>
       </div>
     </div>
   </div>
