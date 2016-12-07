@@ -55,7 +55,7 @@ app = Celery('tap.scripts.tasks', broker='sqla+' + settings['sqlalchemy.url'])
 
 def start_celeryworker():
     process = subprocess.Popen(
-        'celery -A tap.scripts.tasks worker --loglevel=info',
+        'celery -A tap.scripts.asynctasks worker --loglevel=info',
         shell=True
     )
 

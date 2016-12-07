@@ -175,6 +175,8 @@ def gen_active(request):
         result['active_users'] = True
     elif request.path.startswith('/management/docs'):
         result['active_docs'] = True
+    elif request.path.startswith('/management/task'):
+        result['active_task'] = True
     return result
 
 

@@ -21,7 +21,7 @@ from tap.models import (
     TapPermission,
     TapUserPermission,
     TapProject,
-    TapApi,
+    TapApi, TapApiAuth
 )
 from tap.modelstask import (
     TapTaskProject,
@@ -64,8 +64,8 @@ class AuthControl(object):
         if (self.request.path.startswith('/management/')
             and not self.request.path.startswith('/management/action')):
             need_permission = self.pages_permission(self.request.path)
-
-        elif self.request.path.startswith('/management/action'):
+        elif (self.request.path.startswith('/management/action') or
+              self.request.path.startswith('/management/task-action')):
             return [(Allow, Everyone, 'view'), (Allow, Everyone, 'edit'),
                     (Allow, Everyone, 'delete'), (Allow, Everyone, 'add')]
         elif self.request.path == '/':
@@ -89,6 +89,11 @@ class AuthControl(object):
         return result
 
     def get_userperm(self, perm_name):
+        """
+        Check if request.user has the permission of perm_name
+        :param perm_name:
+        :return:
+        """
         with transaction.manager:
             need_permission, action = perm_name.split(':')
             permission = DBSession.query(TapPermission).filter_by(
@@ -98,36 +103,42 @@ class AuthControl(object):
 
             user_perm = TempPermission(user_perm)
 
-            if not need_permission.startswith('SYS') and '.' in need_permission:
-                # if parent-permission has the authorization,
-                # also child-permission has it.
-                permissions = need_permission.split('.')
-                for i in range(len(permissions)):
-                    permission = '.'.join(permissions[:i+1])
-                    permission = DBSession.query(TapPermission).filter_by(
-                        name=permission
-                    ).first()
-                    if not permission:
-                        continue
-                    _perm = DBSession.query(TapUserPermission).filter_by(
-                        user_id=self.request.user.id,
-                        permission_id=permission.id
-                    ).first()
-                    if _perm:
-                        user_perm.a_add = (user_perm.a_add or _perm.a_add)
-                        user_perm.a_edit = (user_perm.a_edit or _perm.a_edit)
-                        user_perm.a_delete = (user_perm.a_delete or
-                                              _perm.a_delete)
-                        user_perm.a_view = (user_perm.a_view or _perm.a_view)
+            # Following is permission query for API level perm control,
+            # but API level perm control was dropped.
+            # if not need_permission.startswith('SYS') and '.' in need_permission:
+            #     # if parent-permission has the authorization,
+            #     # also child-permission has it.
+            #     permissions = need_permission.split('.')
+            #     for i in range(len(permissions)):
+            #         permission = '.'.join(permissions[:i+1])
+            #         permission = DBSession.query(TapPermission).filter_by(
+            #             name=permission
+            #         ).first()
+            #         if not permission:
+            #             continue
+            #         _perm = DBSession.query(TapUserPermission).filter_by(
+            #             user_id=self.request.user.id,
+            #             permission_id=permission.id
+            #         ).first()
+            #         if _perm:
+            #             user_perm.a_add = (user_perm.a_add or _perm.a_add)
+            #             user_perm.a_edit = (user_perm.a_edit or _perm.a_edit)
+            #             user_perm.a_delete = (user_perm.a_delete or
+            #                                   _perm.a_delete)
+            #             user_perm.a_view = (user_perm.a_view or _perm.a_view)
             return user_perm
 
-    def project_name(self, project_id):
+    def api_project_name(self, project_id):
         project = DBSession.query(TapProject).get(project_id)
         return project.name
 
-    def project_name_byapi(self, api_id):
+    def api_project_name_byapi(self, api_id):
         api = DBSession.query(TapApi).get(api_id)
         return api.project.name
+
+    def api_project_name_byauth(self, auth_id):
+        auth = DBSession.query(TapApiAuth).get(auth_id)
+        return self.api_project_name_byapi(auth.api_id)
 
     def task_project_name(self, tproject_id):
         project = DBSession.query(TapTaskProject).get(tproject_id)
@@ -153,11 +164,11 @@ class AuthControl(object):
         elif path == '/management/project':
             result = 'SYS_PROJECT:view'
         elif path.startswith('/management/project/'):
-            result = '%s:view' % self.project_name(matchdict['project_id'])
+            result = '%s:view' % self.api_project_name(matchdict['project_id'])
         elif path.startswith('/management/api/'):
-            result = '%s:view' % self.project_name_byapi(matchdict['api_id'])
+            result = '%s:view' % self.api_project_name_byapi(matchdict['api_id'])
         elif path.startswith('/management/api-test'):
-            result = '%s:view' % self.project_name_byapi(params['id'])
+            result = '%s:view' % self.api_project_name_byapi(params['id'])
         return result
 
     @property

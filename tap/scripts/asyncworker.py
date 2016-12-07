@@ -1,10 +1,9 @@
 #coding=utf8
-__author__ = 'Vincent.Wen'
 
-import sys
 from optparse import OptionParser
 
-from tap.scripts.tasks import start_celeryworker
+from tap.scripts.asynctasks import start_celeryworker
+
 
 def start():
     """

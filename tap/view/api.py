@@ -62,7 +62,7 @@ def forbidden(request):
         url = '/management/login?next=%s' % path
         return HTTPFound(location=url)
     else:
-        return render_to_response('templates/forbidden.html', locals(),
+        return render_to_response('tap:templates/forbidden.html', locals(),
                                   request=request)
 
 
@@ -93,7 +93,7 @@ def login(request):
                 return HTTPFound(location=next_url, headers=headers)
 
     captcha_id = gen_captcha()
-    return render_to_response('templates/login.html', locals(), request=request)
+    return render_to_response('tap:templates/login.html', locals(), request=request)
 
 
 @view_config(route_name="logout")
@@ -113,7 +113,7 @@ class Management(object):
                 .order_by(TapProject.id.desc())
             context = dict(pagename=u' Tap', projects=projects)
             context.update(universal_vars(self.request))
-            return render_to_response('templates/home.html', context,
+            return render_to_response('tap:templates/home.html', context,
                                       request=self.request)
 
     @view_config(route_name='language', permission="view")
@@ -126,35 +126,13 @@ class Management(object):
             response.set_cookie('_LOCALE_', 'en', max_age=3600*24*365)
         return response
 
-    @view_config(route_name='docs', permission="view")
-    def docs(self):
-        context = universal_vars(self.request)
-        context['pagename'] = u' Tap - 文档'
-        return render_to_response('templates/docs.html', context,
-                                  request=self.request)
-
-    @view_config(route_name='apps', permission="view")
-    def apps(self):
-        context = universal_vars(self.request)
-        context['pagename'] = u' Tap - Applications'
-        return render_to_response('templates/applications.html', context,
-                                  request=self.request)
-
-    @view_config(route_name='apps_mobilehosting', permission="view")
-    def apps_hosting(self):
-        context = universal_vars(self.request)
-        context['pagename'] = u' Tap - Applications'
-        return render_to_response('templates/applications_mobileapp.html',
-                                  context, request=self.request)
-
-
     @view_config(route_name="user_list", permission="view")
     def user_list(self):
         with transaction.manager:
             users = DBSession.query(TapUser)
             context = dict(pagename=u"权限管理", users=users)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/user_list.html",
+            return render_to_response("tap:templates/user_list.html",
                                       context, request=self.request)
 
     @view_config(route_name="user_edit", permission="edit")
@@ -172,7 +150,7 @@ class Management(object):
                            user_permissions=user_permissions,
                            permissions=permissions, user=user)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/user_edit.html",
+            return render_to_response("tap:templates/user_edit.html",
                                       context, request=self.request)
 
     @view_config(route_name="database", permission="view")
@@ -181,8 +159,8 @@ class Management(object):
             conns = DBSession.query(TapDBConn).order_by(TapDBConn.id.desc())
             context = dict(conns=conns, pagename=u"数据库")
             context.update(universal_vars(self.request))
-            return render_to_response('templates/database.html', context,
-                                      request=self.request)
+            return render_to_response('tap:templates/database/database.html',
+                                      context, request=self.request)
 
     @view_config(route_name="database_view", permission="view")
     def database_view(self):
@@ -197,8 +175,9 @@ class Management(object):
                            tablelist=show_tables(dbconn.dbtype, cursor))
 
             context.update(universal_vars(self.request))
-            return render_to_response("templates/database_view.html",
-                                      context, request=self.request)
+            return render_to_response(
+                "tap:templates/database/database_view.html",
+                context, request=self.request)
 
     @view_config(route_name="database_execute", permission="view")
     def database_execute(self):
@@ -244,9 +223,10 @@ class Management(object):
                 result_json = json.dumps(result, cls=TapEncoder)
                 context = dict(result=result, result_json=result_json)
 
-                return render_to_response("templates/database_execute.html",
-                                          context, request=self.request)
-            except Exception, e:
+                return render_to_response(
+                    "tap:templates/database/database_execute.html",
+                    context, request=self.request)
+            except Exception as e:
                 import traceback
                 msg = str(e)
                 trace = traceback.format_exc()
@@ -369,7 +349,7 @@ class Management(object):
                            api=api, active_config=True, dbconn=dbconn,
                            dbconn_secondary=dbconn_secondary)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/api_config.html", context,
+            return render_to_response("tap:templates/api/api_config.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_stats", permission="view")
@@ -409,7 +389,7 @@ class Management(object):
                            category=category, paginator=paginator,
                            error_list=error_list, client_id=client_id)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/api_stats.html", context,
+            return render_to_response("tap:templates/api/api_stats.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_cachemanage", permission="view")
@@ -440,7 +420,7 @@ class Management(object):
                            selected=selected, api_selected=api_selected,
                            math=math)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/api_cachemanage.html",
+            return render_to_response("tap:templates/api/api_cachemanage.html",
                                       context, request=self.request)
 
     @view_config(route_name="api_release", permission="view")
@@ -483,7 +463,7 @@ class Management(object):
                            releases=releases, paginator=paginator,
                            release_db=release_db, release_content=release_content)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/api_release.html", context,
+            return render_to_response("tap:templates/api/api_release.html", context,
                                       request=self.request)
 
     @view_config(route_name="api_release_version", permission="view")
@@ -496,7 +476,7 @@ class Management(object):
 
             context = dict(pagename=u"", api=release)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/api_release_version.html",
+            return render_to_response("tap:templates/api/api_release_version.html",
                                       context, request=self.request)
 
     @view_config(route_name="client_home", permission="view")
@@ -506,8 +486,8 @@ class Management(object):
 
             context = dict(pagename=u"客户端管理", clients=clients)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/client_home.html", context,
-                                      request=self.request)
+            return render_to_response("tap:templates/client/client_home.html",
+                                      context, request=self.request)
 
     @view_config(route_name="client_detail", permission="view")
     def client_detail(self):
@@ -550,7 +530,7 @@ class Management(object):
             context.update(universal_vars(self.request))
             context.update(self.auth_detail())
 
-            return render_to_response("templates/client_detail.html",
+            return render_to_response("tap:templates/client/client_detail.html",
                                       context, request=self.request)
 
     @view_config(route_name="auth_home", permission="view")
@@ -570,7 +550,7 @@ class Management(object):
                            auth_list=auth_list, api=api, active_auth=True,
                            clients=clients)
             context.update(universal_vars(self.request))
-            return render_to_response("templates/api/auth_home.html", context,
+            return render_to_response("tap:templates/api/auth_home.html", context,
                                       request=self.request)
 
     # @view_config(route_name="client_accesskeys", permission="view")
@@ -595,7 +575,7 @@ class Management(object):
                 paginator=paginator, datetime=datetime, active_auth=True
             )
             # context.update(common_vars(self.request))
-            # return render_to_response("templates/client_accesskeys.html",
+            # return render_to_response("tap:templates/client_accesskeys.html",
             #                           context, request=self.request)
             return context
 
@@ -685,7 +665,7 @@ class Management(object):
                 context = dict(result=result, config=config, paras=paras,
                                result_json=result_json)
 
-                return render_to_response("templates/api/api_test.html",
+                return render_to_response("tap:templates/api/api_test.html",
                                           context, request=self.request)
             except Exception as e:
                 import traceback
@@ -880,10 +860,10 @@ class ChartsGen(object):
 
         template = None
         if ctype == 'TIME':
-            template = 'templates/charts_line.html'
+            template = 'tap:templates/chart/charts_line.html'
             result = self.chart_time(category)
         elif ctype == 'VISIT':
-            template = 'templates/charts_visit.html'
+            template = 'tap:templates/chart/charts_visit.html'
             result = self.chart_visit(category)
 
         result = json.dumps(result)
@@ -899,7 +879,7 @@ class WidgetExcel(object):
 
     @view_config(route_name="upload_excel")
     def upload_view(self):
-        template = "templates/database_xlsupload.html"
+        template = "tap:templates/database/database_xlsupload.html"
         dbconn_id = self.request.params['dbconn_id']
 
         context = universal_vars(self.request)
@@ -919,7 +899,7 @@ class WidgetExcel(object):
 
         file_name = self.request.POST['excel'].filename
         excel_file = self.request.POST['excel'].file
-        from tap.scripts.tasks import upload_excel
+        from tap.scripts.asynctasks import upload_excel
 
         # save task
         with transaction.manager:

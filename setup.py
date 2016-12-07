@@ -103,8 +103,9 @@ setup(
     entry_points="""\
     [paste.app_factory]
     main = tap.server:main
+    service = tap.server:main_service
     [console_scripts]
-    tap_worker = tap.scripts.worker:start
+    tap_worker = tap.scripts.asyncworker:start
     tap_initdb = tap.scripts.initializedb:main
     tap_dbconnupdate = tap.scripts.dbtools:check_dbconn
     tap_stats = tap.service.rpcstats:main

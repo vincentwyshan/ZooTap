@@ -1,7 +1,5 @@
 #coding=utf8
 
-__author__ = 'Vincent@Home'
-
 import re
 import uuid
 
@@ -11,6 +9,7 @@ import transaction
 import simplejson as json
 
 from tap.security.auth import encrypt_password
+from tap.security.permission import perm_check
 from tap.service.cache import cache_get, cache_delete
 from tap.service.api import Program
 from tap.service.common import (
@@ -37,14 +36,12 @@ from tap.models import (
 )
 
 
-
-
-class Action(object):
+class ApiActions(object):
     def __init__(self, request):
         self.request = request
 
     @perm_check
-    @view_config(route_name='action', permission="edit")
+    @view_config(route_name='api_action', permission="edit")
     def route(self):
         result = dict(success=0, message=u"没有任何操作可执行!")
         action = self.request.params.get('action')
@@ -57,7 +54,9 @@ class Action(object):
             result = self.conn_display()
         elif 'projectsave' == action:
             result = self.project_save()
-        elif 'apisave' == action:
+        elif 'apiSave' == action:
+            result = self.api_save()
+        elif 'apiCreate' == action:
             result = self.api_save()
         elif 'paranew' == action:
             result = self.para_new()
@@ -202,7 +201,7 @@ class Action(object):
             with transaction.manager:
                 api = None
                 changed = False
-                api_id = self.request.params.get('id')
+                api_id = self.request.params.get('api_id')
                 if api_id:
                     api = DBSession.query(TapApi).get(api_id)
                 else:
