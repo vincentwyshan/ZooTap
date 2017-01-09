@@ -21,7 +21,6 @@ DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
 
 
-
 class TapUser(Base):
     __tablename__ = 'tap_user'
     id = Column(Integer, Sequence('seq_tapuser_id'), primary_key=True)

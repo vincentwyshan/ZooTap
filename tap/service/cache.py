@@ -1,6 +1,4 @@
-#coding=utf8
-__author__ = 'Vincent.Wen'
-
+# coding=utf8
 
 import time
 import cPickle
@@ -11,6 +9,7 @@ from pyramid_dogpile_cache import get_region
 from tap.service.common import conn_get
 from tap.service.interpreter import ParaHandler
 
+__author__ = 'Vincent.Wen'
 
 tap_cache = get_region('tap')
 
