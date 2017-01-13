@@ -18,8 +18,8 @@ from tap.models import DBSession
 from tap.modelstask import (
     TapTask,
     TapTaskStatus,
-    TapTaskJobAssignment,
-    TapTaskJobHistory,
+    TapTaskAssignment,
+    TapTaskAssignHistory,
     TapTaskHost,
 )
 
@@ -38,8 +38,8 @@ def gen_jobs():
 
         # get all jobs, start time greater than now + INTERVAL_RUN minutes
         start_time = now + datetime.timedelta(minutes=INTERVAL_RUN)
-        job_list = DBSession.query(TapTaskJobAssignment.task_id).filter(
-            TapTaskJobAssignment.start_time > start_time)
+        job_list = DBSession.query(TapTaskAssignment.task_id).filter(
+            TapTaskAssignment.start_time > start_time)
         job_list = [j.task_id for j in job_list]
 
         # calculate difference
@@ -63,7 +63,7 @@ def gen_jobs():
 
 
 def create_job(host_choices, hosts, start_time, task):
-    job = DBSession.query(TapTaskJobAssignment).filter_by(
+    job = DBSession.query(TapTaskAssignment).filter_by(
         task_id=task.id).first()
 
     # previous job not finished
@@ -71,8 +71,8 @@ def create_job(host_choices, hosts, start_time, task):
         return False
 
     if not job:
-        job = TapTaskJobAssignment()
-        history = TapTaskJobHistory()
+        job = TapTaskAssignment()
+        history = TapTaskAssignHistory()
         DBSession.add(job)
         DBSession.add(history)
         job.task_id = task.id

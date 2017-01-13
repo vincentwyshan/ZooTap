@@ -24,8 +24,8 @@ from tap.models import DBSession
 from tap.modelstask import (
     TapTask,
     TapTaskStatus,
-    TapTaskJobAssignment,
-    TapTaskJobHistory,
+    TapTaskAssignment,
+    TapTaskAssignHistory,
     TapTaskHost,
     TapTaskHostHistory,
     TapTaskExecutable,
@@ -147,9 +147,9 @@ class Handler(object):
         # query job
         now = datetime.datetime.now()
         with transaction.manager:
-            jobs = DBSession.query(TapTaskJobAssignment) \
-                .filter(TapTaskJobAssignment.host_id == host_id,
-                        TapTaskJobAssignment.time_start > now)
+            jobs = DBSession.query(TapTaskAssignment) \
+                .filter(TapTaskAssignment.host_id == host_id,
+                        TapTaskAssignment.time_start > now)
 
             result = []
             for job in jobs:
@@ -178,13 +178,13 @@ class Handler(object):
         :return:
         """
         with transaction.manager:
-            job = DBSession.query(TapTaskJobAssignment).get(job_id)
+            job = DBSession.query(TapTaskAssignment).get(job_id)
             start_time = datetime.datetime.strptime(
                 start_time, '%y-%m%d %H:%M:%s')
             job.time_start1 = start_time
-            history = DBSession.query(TapTaskJobHistory).filter(
+            history = DBSession.query(TapTaskAssignHistory).filter(
                 task_id=job.task_id, host_id=host_id
-            ).order_by(desc(TapTaskJobHistory.id)).first()
+            ).order_by(desc(TapTaskAssignHistory.id)).first()
             history.time_start1 = start_time
 
     @error_handle
@@ -200,14 +200,14 @@ class Handler(object):
         :return:
         """
         with transaction.manager:
-            job = DBSession.query(TapTaskJobAssignment).get(job_id)
+            job = DBSession.query(TapTaskAssignment).get(job_id)
             end_time = datetime.datetime.strptime(
                 end_time, '%y-%m%d %H:%M:%s')
             job.time_end = end_time
             job.is_failed = (not success)
-            history = DBSession.query(TapTaskJobHistory).filter(
+            history = DBSession.query(TapTaskAssignHistory).filter(
                 task_id=job.task_id, host_id=host_id
-            ).order_by(desc(TapTaskJobHistory.id)).first()
+            ).order_by(desc(TapTaskAssignHistory.id)).first()
             history.time_end = end_time
             history.is_failed = (not success)
 

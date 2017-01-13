@@ -35,6 +35,7 @@
     <![endif]-->
 
     <link rel="stylesheet" href="/static/jjsonviewer/jjsonviewer.css"/>
+    <link rel="stylesheet" href="/static/css1/site.css"/>
 
     <!-- ace settings handler -->
     <script src="/static/js/ace-extra.min.js"></script>
@@ -184,7 +185,7 @@
                     %for project in project_names:
                     <li class="hover ${'active' if (current_project_id==project['id']) else ''}">
                         <a href="/management/project/${project['id']}">
-                            <i class="menu-icon fa fa-dot-circle-o"></i>
+                            <i class="menu-icon fa fa-fighter-jet"></i>
                             ${project['name']}
                         </a>
                         <b class="arrow"></b>
@@ -204,8 +205,8 @@
 
                 <ul class="submenu">
                     <li class="hover ">
-                        <a href="/management/task/hosts">
-                            <i class="menu-icon fa fa-dot-circle-o"></i>
+                        <a href="/management/task/host">
+                            <i class="menu-icon fa fa-server"></i>
                             ${request._(u'服务器')}
                         </a>
                         <b class="arrow"></b>
@@ -326,8 +327,8 @@
         <!-- #section:basics/footer -->
         <div class="footer-content">
             <span class="bigger-120">
-                <span class="blue bolder"><a target="_blank" href="http://www..com"></a></span>
-                Application &copy; 2009-2015,&nbsp;&nbsp;
+                <span class="blue bolder"><a target="_blank" href="http://www.vincentsfootprint.com">Vincent</a></span>
+                Application &copy; 2015-2016,&nbsp;&nbsp;
             </span>
             <span class="bigger-120">
                 <a href="/static/doc/index.html">

@@ -33,8 +33,8 @@ def groupfinder(user_id, request):
         user = bind_user(request, user_id)
         if user:
             return [user.name]
-        raise exceptions.UserNotAvailable
-    return [Everyone]
+    return None
+    # return [Everyone]
 
 
 class TempPermission(object):

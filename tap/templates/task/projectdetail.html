@@ -1,0 +1,24 @@
+<%inherit file="../base.html" />
+
+<%block name="pagecontent">
+<div class="widget-box transparent">
+    <div class="widget-header widget-header-large task-project-header">
+        <h3 class="widget-title grey lighter">
+            <i class="ace-icon fa fa-codepen green"></i>
+            Test
+        </h3>
+        <a class="${'custom-tabview-active' if 'task-list' in request.params else ''}"
+           href="?task-list">${request._(u'任务列表')}</a>
+        <a class="${'custom-tabview-active' if 'running-stats' in request.params else ''}"
+           href="?running-stats">${request._(u'运行状态')}</a>
+    </div>
+
+    <div class="widget-body">
+        <div class="widget-main padding-24">
+            <div class="row">
+                <div class="col-xs-12"></div>
+            </div>
+        </div>
+    </div>
+</div>
+</%block>

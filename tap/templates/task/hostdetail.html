@@ -1,0 +1,18 @@
+<%inherit file="../base.html" />
+
+<%block name="pagecontent">
+<div class="row host-load-average">
+    <h5 class="host-info-title">CPU</h5>
+    <div></div>
+</div>
+<div class="row host-cpu"></div>
+<div class="row host-memory"></div>
+<div class="row host-disk-usage"></div>
+</%block>
+
+
+<%block name="jsblock">
+<script src="/static/highcharts/highcharts.js"></script>
+<script src="/static/js1/hostdetail.js"></script>
+</%block>
+

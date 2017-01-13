@@ -1,0 +1,65 @@
+<%inherit file="../base.html" />
+
+<%block name="pagecontent">
+
+<div class="row">
+	<table class="table table-hover table-striped">
+		<thead>
+		<tr>
+			<th>#</th>
+			<th>${request._(u'Host Name')}</th>
+			<th>${request._(u'Ip Address')}</th>
+			<th>${request._(u'OS')}</th>
+			<th>${request._(u'CPU')}</th>
+			<th>${request._(u'Memory')}</th>
+			<th>${request._(u'Disk')}</th>
+			<th>${request._(u'Register')}</th>
+			<th>${request._(u'Status')}</th>
+			<th style="text-align:right; padding-right: 40px">
+				<i class="fa fa-info bigger-120"
+				   data-toggle="popover" data-rel="popover" data-trigger="hover"
+				   data-placement="left" data-content="${request._(u'服务器不可用时发出提醒')}"></i>
+			</th>
+		</tr>
+		</thead>
+		<tbody>
+		%for host in hosts:
+		<tr>
+			<td>${loop.index + 1}</td>
+			<td><a href="/management/project/${project.id}">${project.name}</a></td>
+			<td>${project.fullname}</td>
+			<td>${project.user_create.name}</td>
+			<td>${project.created}</td>
+		</tr>
+		%endfor
+		<tr>
+			<td>1</td>
+			<td><a href="/management/task/host/${1}">Server 1</a></td>
+			<td>192.168.0.1</td>
+			<td>Linux</td>
+			<td>2</td>
+			<td>2046M</td>
+			<td>12G</td>
+			<td>2012-10-01</td>
+			<td><span class="label label-danger"> Lost</span></td>
+			<td align="right">
+				<label>
+					<input name="switch-field-1" class="ace ace-switch ace-switch-4 btn-empty" type="checkbox">
+					<span class="lbl"></span>
+				</label>
+			</td>
+		</tr>
+
+		</tbody>
+	</table>
+</div>
+
+</%block>
+
+
+<%block name="jsblock">
+<script>
+
+</script>
+</%block>
+

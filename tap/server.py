@@ -52,6 +52,9 @@ ROUTES = [
 
     # Tasks
     ("task_project_index", "/management/task"),
+    ("task_project_hosts", "/management/task/host"),
+    ("task_host_detail", "/management/task/host/{host_id}"),
+    ("task_project_detail", "/management/task/{project_id}"),
 ]
 
 
@@ -96,7 +99,8 @@ def main(global_config, **settings):
 def add_route(config):
     config.add_translation_dirs("tap:locale")
 
-    config.add_static_view('static', 'static', cache_max_age=3600)
+    # config.add_static_view('static', 'static', cache_max_age=3600)
+    config.add_static_view('static', 'static', cache_max_age=0)
 
     def _add_route(cfg):
         if len(cfg) == 2:

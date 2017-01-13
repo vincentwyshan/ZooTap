@@ -29,6 +29,9 @@ ENUM_SCRIPT_TYPE = Enum('SHELL', 'SQL', 'PYTHON', name="t_script_type",
 
 
 class TapTask(Base):
+    """
+    Task configuration
+    """
     __tablename__ = 'tap_task'
     id = Column(Integer, Sequence('seq_ttask_id'), primary_key=True)
     name = Column(Unicode(60), nullable=False)
@@ -96,7 +99,6 @@ class TapTaskHostBind(Base):
                        onupdate=datetime.datetime.now, nullable=False)
 
 
-
 class TapTaskProject(Base):
     __tablename__ = 'tap_taskproject'
     id = Column(Integer, Sequence('seq_ttproject_id'), primary_key=True)
@@ -109,9 +111,12 @@ class TapTaskProject(Base):
                        onupdate=datetime.datetime.now, nullable=False)
 
 
-class TapTaskSection(Base):
-    __tablename__ = 'tap_tasksection'
-    id = Column(Integer, Sequence('seq_ttsection_id'), primary_key=True)
+class TapTaskAction(Base):
+    """
+    A child action in a task
+    """
+    __tablename__ = 'tap_taskaction'
+    id = Column(Integer, Sequence('seq_ttaction_id'), primary_key=True)
 
     # executable_id = Column(Integer, ForeignKey('tap_taskexecutable.id'))
     # executable = relationship('TapTaskExecutable',
@@ -127,7 +132,7 @@ class TapTaskSection(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
-Index('tap_task_r_task_id', TapTaskSection.task_id)
+Index('tap_task_r_task_id', TapTaskAction.task_id)
 
 
 class TapTaskExecutable(Base):
@@ -170,6 +175,9 @@ Index('tap_task_history_taskid', TapTaskHistory.task_id)
 
 
 class TapTaskStats(Base):
+    """
+    Task's latest stats information
+    """
     __tablename__ = 'tap_taskstats'
     id = Column(Integer, Sequence('seq_tthistory_id'), primary_key=True)
     task_id = Column(Integer, ForeignKey('tap_task.id'))
@@ -187,7 +195,7 @@ class TapTaskStats(Base):
     status = Column(
         Enum('RUNNING', 'SUCCESS', 'FAIL', name="r_result_type",
              convert_unicode=True),
-        default=u'SLEEP'
+        default=u''
     )
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
@@ -304,19 +312,24 @@ Index('tap_task_hosthistoryd', TapTaskHostHistory.host_id,
       TapTaskHostHistory.created)
 
 
-class TapTaskJobAssignment(Base):
-    """A job was assigned to 1 host, be about to call"""
-    __tablename__ = 'tap_task_jobassignments'
-    id = Column(Integer, Sequence('seq_ttjob_assign_id'), primary_key=True)
+class TapTaskAssignment(Base):
+    """A task was assigned to 1 host, be about to call"""
+    __tablename__ = 'tap_task_assignments'
+    id = Column(Integer, Sequence('seq_tt_assign_id'), primary_key=True)
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
-    task = relationship(TapTask, backref=backref('jobs'))
+    task = relationship(TapTask, backref=backref('assignments'))
 
     host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
-    host = relationship(TapTaskHost, backref=backref('assigns'))
+    host = relationship(TapTaskHost, backref=backref('assigned_tasks'))
 
-    # TODO change to status (SUCCESS, FAIL, RUNNING)
-    is_failed = Column(Boolean, default=None, nullable=True)
+    # is_failed = Column(Boolean, default=None, nullable=True)
+    status = Column(
+        Enum('RUNNING', 'SUCCESS', 'FAIL', name="r_assign_type",
+             convert_unicode=True),
+        default=u''
+    )
+
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
 
     time_start = Column(DateTime, nullable=False)  # scheduled start time
@@ -326,14 +339,17 @@ class TapTaskJobAssignment(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
-Index('tap_task_jobassign_tid', TapTaskJobAssignment.task_id, unique=True)
-Index('tap_task_jobhost_time', TapTaskJobAssignment.host_id,
-      TapTaskJobAssignment.time_start)
+Index('tap_task_assign_tid', TapTaskAssignment.task_id, unique=True)
+Index('tap_task_assign_host_time', TapTaskAssignment.host_id,
+      TapTaskAssignment.time_start)
 
 
-class TapTaskJobHistory(Base):
-    __tablename__ = 'tap_task_jobhistory'
-    id = Column(Integer, Sequence('seq_ttjob_history_id'), primary_key=True)
+class TapTaskAssignHistory(Base):
+    """
+    Task Assignments history
+    """
+    __tablename__ = 'tap_task_assign_history'
+    id = Column(Integer, Sequence('seq_tt_assign_history_id'), primary_key=True)
 
     task_id = Column(Integer, ForeignKey('tap_task.id'))
     task = relationship(TapTask, backref=backref('jobhistories'))
@@ -341,8 +357,13 @@ class TapTaskJobHistory(Base):
     host_id = Column(Integer, ForeignKey('tap_taskhost.id'))
     host = relationship(TapTaskHost, backref=backref('jobhistories'))
 
-    # TODO change to status (SUCCESS, FAIL, RUNNING)
-    is_failed = Column(Boolean, default=None, nullable=True)
+    # is_failed = Column(Boolean, default=None, nullable=True)
+    status = Column(
+        Enum('RUNNING', 'SUCCESS', 'FAIL', name="r_assign_history_type",
+             convert_unicode=True),
+        default=u''
+    )
+
     log_path = Column(UnicodeText, nullable=False)  # VNC path or path on host
 
     time_start = Column(DateTime, nullable=False)  # scheduled start time
@@ -352,13 +373,14 @@ class TapTaskJobHistory(Base):
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.now,
                        onupdate=datetime.datetime.now, nullable=False)
-Index('tap_task_jobhis_tid', TapTaskJobHistory.task_id)
+Index('tap_task_jobhis_tid', TapTaskAssignHistory.task_id)
 
 
 class TapTaskStatus(Base):
     """
     Store status by key-value
     """
+    # TODO where is it used
     __tablename__ = 'tap_task_status'
     id = Column(Integer, Sequence('seq_tt_status_id'), primary_key=True)
 

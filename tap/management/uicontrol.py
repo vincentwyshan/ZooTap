@@ -21,7 +21,8 @@ class Breadcrumbs(object):
     def __init__(self, request):
         self.request = request
         self.trans_db = _t(request, _(u'数据库'))
-        self.trans_project = _t(request, _(u'项目'))
+        self.trans_project_api = _t(request, _(u'接口项目'))
+        self.trans_project_task = _t(request, _(u'任务项目'))
         self.trans_client = _t(request, _(u'客户端'))
         self.trans_userlist = _t(request, _(u'用户列表'))
         self.trans_index = _t(request, _(u'首页'))
@@ -48,7 +49,7 @@ class Breadcrumbs(object):
             return
         return [(
             {"url": '/management/project', "class": "active",
-             "text": self.trans_project}
+             "text": self.trans_project_api}
         )]
 
     def project_detail(self):
@@ -61,7 +62,7 @@ class Breadcrumbs(object):
             project = DBSession.query(TapProject).get(project_id)
             result.append(
                 {"url": '/management/project', "class": "",
-                 "text": self.trans_project},
+                 "text": self.trans_project_api},
             )
             result.append(
                 {"class": "active", "text": project.fullname},
@@ -76,15 +77,15 @@ class Breadcrumbs(object):
         result = []
         with transaction.manager:
             api = DBSession.query(TapApi).get(api_id)
-            self.result.append(
+            result.append(
                 {"url": '/management/project', "class": "",
-                 "text": self.trans_project},
+                 "text": self.trans_project_api},
             )
-            self.result.append(
+            result.append(
                 {"url": '/management/project/%s' % api.project.id,
                  "class": "",  "text": api.project.fullname},
             )
-            self.result.append(
+            result.append(
                 {"class": "active", "text": api.fullname}
             )
         return result
@@ -130,7 +131,7 @@ class Breadcrumbs(object):
         if not re.match(ur"/management/task", self.request.path):
             return
         return [
-            {"class": "active", "text": self.trans_project}
+            {"class": "active", "text": self.trans_project_task}
         ]
 
     def result(self):
@@ -140,7 +141,8 @@ class Breadcrumbs(object):
             self.user()
         )
         if not data:
-            data = [{"url": '/', 'class': 'active', "text": self.trans_project}]
+            data = [{"url": '/', 'class': 'active', "text":
+                self.trans_project_task}]
         return data
 
 
