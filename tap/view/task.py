@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 
 from pyramid.view import view_config
 from pyramid.view import forbidden_view_config
