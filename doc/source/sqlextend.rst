@@ -24,7 +24,7 @@ Postgresql 通过 limit、offset 实现分页。
 需要考虑使用的连接驱动是否支持session变量保存的问题。比如，第一句执行 ``set @a=1``，
 第二句可以使用 ``select @a`` 选择上一个语句中保存的变量@a。python-mysql 和 psycopg2
 可以支持session中保存的变量， cx_oracle 和 pyodbc 对session 不支持。推荐使用
-`cfn_export`_ 控制流语句来导出变量。
+`fn_export`_ 控制流语句来导出变量。
 
 变量绑定
 =========
@@ -53,19 +53,19 @@ Postgresql 通过 limit、offset 实现分页。
 扩展函数
 =========
 
-cfn_export
+fn_export
 ------------
 导出变量
 
-cfn_bind
----------
+fn_bind_tab & fn_bind_obj
+--------------------------
 绑定结果集
 
-cfn_case
+fn_case
 ---------
 逻辑判断
 
-cfn_dbswitch
+fn_dbswitch
 -------------
 数据库切换
 
@@ -77,21 +77,23 @@ cfn_dbswitch
 
     ::
 
-        cfn_export(@c): -- 导出变量 @c
+        fn_export(@c): -- 导出变量 @c
             select 'b' as c;
 
-        cfn_case(@c=='a')      -- 判断 @c 值是否等于 'a'
-        cfn_bind(tablea):      -- 若执行下面SQL，将结果集绑定到 tablea
+        fn_case(@c=='a')      -- 判断 @c 值是否等于 'a'
+        fn_bind_tab('tablea'):      -- 若执行下面SQL，将结果集绑定到 tablea
             select 'a', 'a1';
+        fn_bind_obj('Attr', 'Attr1'):
+            select 1 as Attr, 2 as Attr1;
             
-        cfn_case(@c=='b')      -- 判断 @c 值是否等于 'b'
-        cfn_bind(tableb):      -- 若执行下面SQL，将结果集绑定到 tableb
+        fn_case(@c=='b')      -- 判断 @c 值是否等于 'b'
+        fn_bind(tableb):      -- 若执行下面SQL，将结果集绑定到 tableb
             select 'b', 'b1';
             
-        cfn_bind(test):          -- 绑定以下结果集到 test
+        fn_bind(test):          -- 绑定以下结果集到 test
             select 'c' c, 'd' d;
             
         -- 股票数据
-        cfn_dbswitch(CADA140) -- 使用数据库 CADA140, CADA140应当在API配置的数据库选项中
-        cfn_bind(table):      -- 绑定结果集到 table
+        fn_dbswitch(CADA140) -- 使用数据库 CADA140, CADA140应当在API配置的数据库选项中
+        fn_bind(table):      -- 绑定结果集到 table
             select * from sthk_security limit 100;

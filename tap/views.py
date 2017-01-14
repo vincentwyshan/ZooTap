@@ -251,7 +251,7 @@ class Management(object):
                 cols = [c[0] for c in cursor.description]
                 result.insert(0, cols)
                 result = dict(
-                    datatable=result,
+                    table=result,
                     elapse=time_used()
                 )
                 result_json = json.dumps(result, cls=TapEncoder)

@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 """
 Standard attribute in response:
     sys_timestamp:  unix_timestamp [int]
@@ -6,8 +6,6 @@ Standard attribute in response:
     sys_error:      [string]
     sys_status:     same with http status code, [int]
 """
-
-__author__ = 'Vincent@Home'
 
 import os
 import re
@@ -360,7 +358,7 @@ class Program(object):
                 self.report_stats_exc(stats, str(e), trace)
                 result = dict(
                     sys_elapse=[],
-                    datatable=[],
+                    data=[],
                     sys_error=cu('[%s]: %s' % (type(e).__name__, str(e))),
                     sys_status=500
                 )
@@ -427,10 +425,10 @@ class Program(object):
         with measure() as time_total:
             data = container['main']()
             if data:
-                result['datatable'] = [[val_universal(v, None) for v in row]
+                result['data'] = [[val_universal(v, None) for v in row]
                                    for row in data]
             else:
-                result['datatable'] = []
+                result['data'] = []
         elapse.append(['EXECUTION TOTAL', time_total()])
 
         result['sys_timestamp_exec'] = time.time()
@@ -468,17 +466,20 @@ class Program(object):
             for i in range(len(stmts)):
                 stmt = stmts[i]
                 with measure() as time_used:
-                    _last_cursor = self.run_stmt(stmt, paras, writable,
-                                               charset, result, elapse)[2]
+                    ex_result = self.run_stmt(stmt, paras, writable,
+                                              charset, result, elapse)
+                    _last_cursor, code_info = ex_result[2], ex_result[3]
                 elapse.append(['ST.%s' % i, time_used()])
 
-            if _last_cursor:
-                # using the last cursor to get final data(datatable)
-                db_result = self.bind_result(_last_cursor, 'datatable', self._dbchoose,
-                                             elapse)
+            if (_last_cursor and
+                    not (code_info.bind_obj or code_info.bind_tab)):
+                # using the last cursor to get final data
+                db_result = self.bind_result(
+                    _last_cursor, 'data', self._dbchoose, elapse)
         elapse.append(['EXECUTION TOTAL', time_total()])
 
-        result['datatable'] = db_result
+        if db_result:
+            result['data'] = db_result
         result['sys_elapse'] = elapse
         result['sys_timestamp_exec'] = time.time()
 
@@ -530,20 +531,35 @@ class Program(object):
         else:
             cursor.execute(stmt)
 
+        data = None
+        if code_info.bind_obj or code_info.bind_tab or code_info.export:
+            data = self.bind_result(cursor, code_info.bind_tab, dbtype, elapse)
+
         # export variables
-        self.run_stmt_export(code_info, paras, cursor)
+        self.run_stmt_export(code_info, paras, data)
 
         # bind result
-        if code_info.bind:
-            assert code_info.bind != 'datatable', "Don't bind data to `datatable`"
-            data = self.bind_result(cursor, code_info.bind, dbtype, elapse)
-            result[code_info.bind] = data
+        if code_info.bind_tab:
+            assert code_info.bind_tab != 'data', "Don't bind result to `data`"
+            result[code_info.bind_tab] = data
+        elif code_info.bind_obj:
+            if len(data) >= 2:
+                data = dict(zip(data[0], data[1]))
+            else:
+                fill_none = [None] * len(code_info.bind_obj)
+                data = dict(zip(code_info.bind_obj, fill_none))
+            for k, v in data.items():
+                if k not in code_info.bind_obj:
+                    continue
+                if k != 'data' and not k.startswith('sys_'):
+                    result[k] = v
 
-        return stmt, paras, cursor
+        return stmt, paras, cursor, code_info
 
     def run_stmt_case(self, code_info, paras):
         """
-        cfn_case 检查, 仅接受值检查
+        fn_case check
+        Support: >, <, >=, <=, ==, and, or
         :return:
         """
         if not code_info.case_statement:
@@ -551,15 +567,17 @@ class Program(object):
 
         case_statement = code_info.case_statement
         for para_name in paras.keys():
+            if para_name in ('and', 'or'):
+                continue
             case_statement = re.sub(ur'\b%s\b' % para_name, "paras['%s']" %
                                     para_name, case_statement)
         result = eval(case_statement)
         print case_statement, result
         return result
 
-    def run_stmt_export(self, code_info, paras, cursor):
+    def run_stmt_export(self, code_info, paras, data):
         """
-        cfn_export, 导出变量
+        fn_export, 导出变量
         :param code_info:
         :param paras:
         :return:
@@ -567,22 +585,22 @@ class Program(object):
         if not code_info.export:
             return
 
-        if not cursor.description:
+        if not data or len(data) < 2:
             script = code_info.script
             script = (script.encode('utf8') if isinstance(script, unicode)
                       else script)
-            raise Exception("cfn_export failed: %s" % script)
-        cols = [c[0] for c in cursor.description]
-        row = cursor.fetchone()
+            raise Exception("fn_export failed: %s" % script)
+        cols = data[0]
+        row = data[1]
         if not row:
             script = code_info.script
             script = (script.encode('utf8') if isinstance(script, unicode)
                       else script)
-            raise Exception("cfn_export failed: %s" % script)
+            raise Exception("fn_export failed: %s" % script)
         row = dict(zip(cols, row))
         for name in code_info.export:
             if name not in row:
-                raise Exception("cfn_export failed: not found field %s" % name)
+                raise Exception("fn_export failed: not found field %s" % name)
             paras[name] = row[name]
 
     def report_stats_exc(self, stats, exc_message, exc_trace):
