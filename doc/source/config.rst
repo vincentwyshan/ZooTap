@@ -30,7 +30,7 @@
     - 数据库名称 为英文加数字加下滑线的组合（不可更改）
     - 数据库类型 目前支持 MYSQL SQLSEVER PSSQL ORACLE 
     - 连接字符串 以下有详细说明：
-        #. MySQL 连接字符串 驱动为mysqldb： ``host=localhost,user=tap,passwd=tap,db=test,charset=utf8 (数据库地址;用户名;密码;数据库名称)``
+        #. MySQL 连接字符串 驱动为mysqldb： ``host=localhost;user=tap;passwd=tap;db=test;charset=utf8 (数据库地址;用户名;密码;数据库名称)``
         #. Oracle 连接字符串 驱动为cx_Oracle： ``tap/tap@localhost/capitalvue（数据库/用户名@链接地址/id名称）``
         #. MSSQL(sqlsever)连接字符串 驱动为pyodbc： ``DSN=tap;DATABASE=tap;UID=tap;PWD=capitalvue（ODBC中DSN;链接名;数据库名;id名称;密码）``
         #. PGSQL(postgresql)： ``host=hostname  dbname=test user=postgres password=secret port=5432``

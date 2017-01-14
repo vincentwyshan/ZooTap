@@ -50,7 +50,8 @@ class ParaHandler(object):
 class StatementInfo:
     # type      # [BIND, EXPORT, CASE, DBSWITCH, ]
     script = None   # source code
-    bind = None
+    bind_tab = None
+    bind_obj = None
     export = []
     db_name = None
     case_statement = None
@@ -78,9 +79,12 @@ class CFNInterpreter(object):
         检查是否有函数调用，如果有，解析出函数代码
         :return: (functions, sql)
         """
+        # every function call has ':'
         if u':' not in source:
             return [], source
-        if not re.match(ur'cfn', source, re.IGNORECASE):
+
+        # function call starts with fn_
+        if not re.match(ur'fn_', source, re.IGNORECASE):
             return [], source
 
         source = list(source)
@@ -119,6 +123,7 @@ class CFNInterpreter(object):
                 function = ''.join(tmp).strip()
                 functions.append(function)
                 tmp = []
+
         # 确保 tmp 中无剩余数据
         tmp = (u''.join(tmp)).strip()
         if tmp:
@@ -133,20 +138,24 @@ class CFNInterpreter(object):
     def set_info(cls, functions, info):
         for func in functions:
             func_lower = func.lower()
-            if func_lower.startswith(u'cfn_bind'):
-                bind = func[9: -1]
-                info.bind = bind.strip()
-            elif func_lower.startswith(u'cfn_export'):
-                export = func[11: -1]
+            if func_lower.startswith(u'fn_bind_tab'):
+                bind = eval(func[12: -1])
+                info.bind_tab = bind.strip()
+            elif func_lower.startswith(u'fn_bind_obj'):
+                bind = func[12: -1]
+                bind = [eval(v).strip() for v in bind.split(',')]
+                info.bind_obj = bind
+            elif func_lower.startswith(u'fn_export'):
+                export = func[10: -1]
                 export = export.split(',')
                 export = [p.strip().replace('@', '')
                           for p in export if p.strip()]
                 export = [p.encode('utf8') if isinstance(p, unicode) else p
                           for p in export]
                 info.export = export
-            elif func_lower.startswith(u'cfn_case'):
+            elif func_lower.startswith(u'fn_case'):
                 # 转换 所有 and or 小写
-                case = func[9: -1]
+                case = func[8: -1]
                 case = re.sub(ur'\band\b', ' and ', case, flags=re.IGNORECASE)
                 case = re.sub(ur'\bor\b', ' or ', case, flags=re.IGNORECASE)
                 case = case.replace(u'@', u'')
@@ -161,8 +170,8 @@ class CFNInterpreter(object):
                     or re.search(ur'\beval\b', case)):
                     raise Exception("Not safe statement.")
                 info.case_statement = case
-            elif func_lower.startswith(u'cfn_dbswitch'):
-                db_name = func[13: -1]
+            elif func_lower.startswith(u'fn_dbswitch'):
+                db_name = func[12: -1]
                 info.db_name = db_name.strip()
             else:
                 raise CFNSyntaxError(func.encode('utf8'))
