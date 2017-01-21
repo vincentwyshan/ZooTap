@@ -24,7 +24,6 @@ from thrift.Thrift import TApplicationException
 import transaction
 
 from tap.servicedef import TapService
-from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
 from tap.models import (
     DBSession,
