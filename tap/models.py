@@ -104,6 +104,7 @@ api_dbsecondary = Table('tap_apidbsecondary', Base.metadata,
     Index('idx_tap_apidbsec_dbconn_id', 'dbconn_id')
 )
 
+
 class TapApi(Base):
     __tablename__ = 'tap_api'
     id = Column(Integer, Sequence('seq_tapapi_id'), primary_key=True)

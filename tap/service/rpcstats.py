@@ -4,22 +4,28 @@ from __future__ import division
 
 import time
 import copy
+import random
 import datetime
+import socket
 import warnings
 import threading
+from functools import wraps
 from optparse import OptionParser
+
+from collections import OrderedDict
 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
+from thrift.transport.TTransport import TTransportException
+from thrift.Thrift import TApplicationException
 
 import transaction
 
 from tap.servicedef import TapService
-# from tap.scripts import init_session_from_cmd
+from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
-from tap.common.thrifthelper import client_ensure
 from tap.models import (
     DBSession,
     TapApi,
@@ -50,7 +56,6 @@ STATS_EXC = {}
 # }
 
 # COUNTER = 0
-
 
 class Handler(object):
     def ping(self):
@@ -317,21 +322,50 @@ def _interval_flush(ivalue):
         time.sleep(interval)
 
 
+def client_ensure(func):
+    """
+    this wraper make sure initialize a new client when connect thrift server
+    failed. wraped thrift Client must have a new_client function to initialize
+    transport connection.
+    """
+    @wraps(func)
+    def wraper(*kargs, **kwarg):
+        try:
+            return func(*kargs, **kwarg)
+        except (TTransportException, TApplicationException, socket.error):
+            self = kargs[0]
+            self.new_client()
+        except BaseException as e:
+            # print e
+            import traceback
+            traceback.print_exc()
+            self = kargs[0]
+            self.new_client()
+    return wraper
+
+
 PORT = 10101
 
 
 class Client(object):
-    def __init__(self, host):
+    def __init__(self, host, initialize=True):
         self.host = host
+
         self.client = None
         self.transport = None
-        self._newclient()
+        self.id = None
+
+        if initialize:
+            self.new_client()
+
+            self.id = (time.time(), random.random())
+            self.id = hash(self.id)
 
     @client_ensure
     def ping(self):
         self.client.ping()
 
-    def _newclient(self):
+    def new_client(self):
         transport = TSocket.TSocket(self.host, PORT)
         # transport.setTimeout(1000*60*2)
         # 超时最多两秒
@@ -350,8 +384,25 @@ class Client(object):
     def report(self, params):
         self.client.report(params)
 
+    def back_pool(self):
+        LOCK.acquire()
+        try:
+            client = Client(self.host, initialize=False)
+            client.client = self.client
+            client.transport = self.transport
+            client.id = self.id
+            if (self.host in CLIENTS_INUSE and
+                    self.id in CLIENTS_INUSE[self.host]):
+                expire = CLIENTS_INUSE[self.host].pop(self.id)[1]
+                CLIENTS[self.host][self.id] = [client, expire]
+                # print "available:", len(CLIENTS[self.host]), "inuse:", len(CLIENTS_INUSE[self.host])
+        finally:
+            LOCK.release()
+
     def close(self):
-        self.transport.close()
+        # self.transport.close()
+        # Must call close to recycle transport
+        self.back_pool()
 
 
 def run_server():
@@ -371,16 +422,37 @@ def run_server():
     print 'Starting done.'
 
 
-clients = {}
+MAX_SIZE = 30
+LOCK = threading.RLock()
+CLIENTS = {}  # host: {id: (client, expire)...}
+CLIENTS_INUSE = {}  # host: {id: (client, expire)...}
 
 
 def get_client(host='127.0.0.1', force_new=False):
-    now = time.time()
-    if host not in clients or clients[host][1] > now or force_new:
-        client = Client(host)
-        expire = now + 60*10
-        clients[host] = (client, expire)
-    return clients[host][0]
+    LOCK.acquire()
+    try:
+        now = time.time()
+        if host not in CLIENTS:
+            CLIENTS[host] = OrderedDict()
+
+        if len(CLIENTS[host]) == 0:
+            client = Client(host)
+            available_client = [client, now + 60 * 10]
+        else:
+            available_client = CLIENTS[host].popitem()[1]
+
+        if available_client[1] > now or force_new:
+            available_client[0].new_client()
+            available_client[1] = now + 60*10
+
+        if host not in CLIENTS_INUSE:
+            CLIENTS_INUSE[host] = {}
+
+        client, expire = available_client
+        CLIENTS_INUSE[host][client.id] = (client, expire)
+        return client
+    finally:
+        LOCK.release()
 
 
 def main():
