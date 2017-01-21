@@ -35,7 +35,7 @@ try:
 except ImportError:
     pass
 
-from tap.service.common import conn_get
+from tap.service.common import conn_get, DBType
 from tap.service.common import stmt_split
 from tap.service.common import measure
 from tap.service.common import dict2api
@@ -158,6 +158,151 @@ def val_universal(val, dbtype):
     return val
 
 
+class ConnectionManager(object):
+    def __init__(self, conns, secondary_conns, load_ratios=None):
+        """
+
+        :param conns: Primary connections
+        :param secondary_conns: Secondary connections
+        :param load_ratios: Load balance ratios
+        """
+        self.config_conns = conns
+        self.config_secondary_conns = secondary_conns
+        self.config_load_ratios = load_ratios
+
+        # Default connection
+        self._default_cursor = None
+        self._default_connection = None
+        self._default_db_name = None
+        self._default_db_type = None
+
+        # Named connections
+        # db_name: [dbtype, secondary_choose_name, connection, cursor]
+        self._connections = {}
+
+        # Random connection choose result
+        self._conn_ratio_result = None
+
+    def _secondary_choose(self, db_cfg):
+        """
+        Choose a database connection config by load balance configuration
+        :param db_cfg:
+        :return:
+        """
+        # No primary config
+        if not self.config_secondary_conns:
+            return db_cfg
+
+        if not self._conn_ratio_result:
+            self._conn_ratio_result = dbconn_ratio_parse(self.config_load_ratios)
+            for db_choice in self._conn_ratio_result.values():
+                start = 0
+                for db, ratio in db_choice.items():
+                    db_choice[db] = [start + 1, start + ratio]
+                    start = start + ratio
+
+        # 生成 1 - 100 的随机数
+        # Generate 1 - 100 random number
+        choice = random.randint(1, 100)
+        db_choice = self._conn_ratio_result[db_cfg.name]
+        db_choose = None
+        for db, ratio in db_choice.items():
+            if ratio[0] <= choice <= ratio[1]:
+                db_choose = db
+                break
+
+        for conn in self.config_conns:
+            if conn.name == db_choose:
+                return conn
+
+        for conn in self.config_secondary_conns:
+            if conn.name == db_choose:
+                return conn
+
+        raise Exception("Can't choose database for %s by config." % db_cfg.name)
+
+    def _init_default(self):
+        # No config, return None
+        if not self.config_conns:
+            return self._default_cursor
+
+        # Choose connection
+        cfg = self.config_conns[0]
+        conn_cfg = self._secondary_choose(cfg)
+        self._default_db_name = conn_cfg.name
+
+        self._default_connection = conn_get(
+            conn_cfg.dbtype, conn_cfg.connstring, conn_cfg.options)
+        self._default_cursor = self._default_connection.cursor()
+        self._default_db_type = conn_cfg.dbtype
+
+        self._connections[cfg.name] = (
+            conn_cfg.dbtype, conn_cfg.name,
+            self._default_connection, self._default_cursor
+        )
+
+    def _init_connection(self, db_name):
+        if not self.config_conns:
+            return None
+
+        for _conn in self.config.dbconn[1:]:
+            if db_name != _conn.name:
+                continue
+            _conn = self.cursor_secondary(_conn)
+            conn = conn_get(
+                _conn.dbtype,
+                _conn.connstring,
+                _conn.options
+            )
+            self._connections[db_name] = (
+                _conn.dbtype, _conn.name, conn, conn.cursor()
+            )
+
+    def _get_conn(self, dbname):
+        if dbname in self._connections:
+            conn = self._connections[dbname]
+        else:
+            self._init_connection(dbname)
+            conn = self._connections[dbname]
+        return conn
+
+
+    @property
+    def default_cursor(self):
+        if not self._default_cursor:
+            self._init_default()
+        return self._default_cursor
+
+    @property
+    def default_dbtype(self):
+        if not self._default_cursor:
+            self._init_default()
+        return self._default_db_type
+
+    @property
+    def default_connection(self):
+        if not self._default_connection:
+            self._init_default()
+        return self._default_cursor
+
+    def connection(self, dbname):
+        conn = self._get_conn(dbname)
+        return conn[2]
+
+    def connection_type(self, dbname):
+        conn = self._get_conn(dbname)
+        return conn[0]
+
+    def cursor(self, dbname):
+        conn = self._get_conn(dbname)
+        return conn[3]
+
+    def close(self):
+        for conn in self._connections.values():
+            conn = conn[2]
+            conn.close()
+
+
 class Program(object):
     def __init__(self, config, ver_num):
         """
@@ -168,95 +313,20 @@ class Program(object):
         self.config = config
         self.ver_num = ver_num
 
-        self._cursor = None
-        self._dbtype = None
-        self._cursors = {}
-        self._cursor_secondary = None
-        self._conn = None
+        self.conn = ConnectionManager(config.dbconn, config.dbconn_secondary,
+                                      config.dbconn_ratio)
 
         self.rpc_client = None
 
-        # 临时变量
-        self._dbconn_ratio_result = None
-        self._dbchoose = [None]
-
-    def cursor_secondary(self, db_cfg):
-        """
-        load balance from secondary database
-        :param db_cfg:
-        :return: dbconn config instance
-        """
-        if not self.config.dbconn_ratio:
-            return db_cfg
-        if not self._dbconn_ratio_result:
-            self._dbconn_ratio_result = \
-                dbconn_ratio_parse(self.config.dbconn_ratio)
-            for db_choice in self._dbconn_ratio_result.values():
-                start = 0
-                for db, ratio in db_choice.items():
-                    db_choice[db] = [start + 1, start + ratio]
-                    start = start + ratio
-
-        # 生成 1 - 100 的随机数
-        choice = random.randint(1, 100)
-        db_choice = self._dbconn_ratio_result[db_cfg.name]
-        db_choose = None
-        for db, ratio in db_choice.items():
-            if ratio[0] <= choice <= ratio[1]:
-                db_choose = db
-                break
-
-        for conn in self.config.dbconn:
-            if conn.name == db_choose:
-                return conn
-
-        for conn in self.config.dbconn_secondary:
-            if conn.name == db_choose:
-                return conn
-
-        raise Exception("can't choose secondary database.")
-
-    def cursor(self):
-        if not self._cursor:
-            # 无数据库配置，返回None
-            if not self.config.dbconn:
-                return self._cursor
-            cfg = self.config
-            conn_cfg = self.cursor_secondary(cfg.dbconn[0])
-            self._dbchoose[0] = conn_cfg.name
-            self._conn = conn_get(conn_cfg.dbtype,
-                                  conn_cfg.connstring,
-                                  conn_cfg.options)
-            self._cursor = self._conn.cursor()
-            self._dbtype = conn_cfg.dbtype
-        return self._cursor
-
-    def cursor_list(self):
-        """
-
-        :return: 实际返回 name: cursor 的dictionary
-        """
-        if not self.config.dbconn or len(self.config.dbconn) <= 1:
-            return self._cursors
-        if not self._cursors:
-            self._cursors[self.config.dbconn[0].name] = \
-                (self._dbtype, self.cursor())
-            for _conn in self.config.dbconn[1:]:
-                name = _conn.name
-                _conn = self.cursor_secondary(_conn)
-                cursor = conn_get(
-                    _conn.dbtype,
-                    _conn.connstring,
-                    _conn.options
-                ).cursor()
-                self._dbchoose.append(_conn.name)
-                self._cursors[name] = (_conn.dbtype, cursor)
-        return self._cursors
-
-    def cursor_by_name(self, db_name):
-        if db_name is None:
-            return self._dbtype, self.cursor()
-        return self.cursor_list()[db_name]
+    def __del__(self):
+        try:
+            self.rpc_client.close()
+        except:
+            pass
+        try:
+            self.conn.close()
+        except:
+            pass
 
     def _has_write(self, statement):
         statement = statement.strip().lower()
@@ -365,7 +435,7 @@ class Program(object):
                 if e.__class__ == ApiAuthFail:
                     result['sys_status'] = 403
             try:
-                self.cursor().execute("commit")
+                self.conn.default_cursor.execute("commit")
             except:
                 pass
 
@@ -378,8 +448,6 @@ class Program(object):
             elapse.append(['TOTAL', time_used])
             result['sys_timestamp_current'] = time.time()
 
-        # 测试 dbconn choice 用
-        # result['sys_dbchoose'] = self._dbchoose
         return result
 
     def run_python(self, paras):
@@ -413,11 +481,10 @@ class Program(object):
             container.update(variables)
 
             # 赋予 数据库连接
-            container['g_cursor'] = self.cursor()
-            cursors = self.cursor_list()
-            # g_cursor_{dbname}
-            for name, _cursor in cursors.items():
-                container['g_cursor_%s' % str(name)] = _cursor
+            container['g_cursor'] = self.conn.default_cursor
+            for dbcfg in self.config.dbconn:
+                name = dbcfg.name
+                container['g_cursor_%s' % str(name)] = self.conn.cursor(name)
 
             container['g_result'] = result
         elapse.append(['COMPILE', time_total()])
@@ -446,7 +513,7 @@ class Program(object):
 
         result = OrderedDict()
         with measure() as time_total:
-            cursor = self.cursor()
+            cursor = self.conn.default_cursor
 
             # prepare
             source = self.config.source.source
@@ -466,16 +533,18 @@ class Program(object):
             for i in range(len(stmts)):
                 stmt = stmts[i]
                 with measure() as time_used:
-                    ex_result = self.run_stmt(stmt, paras, writable,
-                                              charset, result, elapse)
+                    ex_result = self.run_stmt(
+                        stmt, paras, writable, charset, result, elapse)
                     _last_cursor, code_info = ex_result[2], ex_result[3]
+                    _last_dbtype = ex_result[4]
                 elapse.append(['ST.%s' % i, time_used()])
 
             if (_last_cursor and
                     not (code_info.bind_obj or code_info.bind_tab)):
                 # using the last cursor to get final data
-                db_result = self.bind_result(
-                    _last_cursor, 'data', self._dbchoose, elapse)
+                db_result = self.fetch_result(
+                    _last_cursor, 'data', _last_dbtype, elapse
+                )
         elapse.append(['EXECUTION TOTAL', time_total()])
 
         if db_result:
@@ -485,7 +554,7 @@ class Program(object):
 
         return result
 
-    def bind_result(self, cursor, name, dbtype, elapse):
+    def fetch_result(self, cursor, name, dbtype, elapse):
         with measure() as time_cu:
             result = []
             if cursor.description:
@@ -511,10 +580,15 @@ class Program(object):
         if not writable and self._has_write(stmt):
             raise TapNotAllowWrite
 
-        # db 选择
-        dbtype, cursor = self.cursor_by_name(code_info.db_name)
+        # Choose database
+        if code_info.db_name:
+            cursor = self.conn.cursor(code_info.db_name)
+            dbtype = self.conn.connection_type(code_info.db_name)
+        else:
+            cursor = self.conn.default_cursor
+            dbtype = self.conn.default_dbtype
 
-        # 处理百分号问题
+        # Handle the % characters
         if dbtype in ('MYSQL', 'PGSQL'):
             stmt = code_info.script.replace(u'%', u'%%')
         else:
@@ -533,7 +607,7 @@ class Program(object):
 
         data = None
         if code_info.bind_obj or code_info.bind_tab or code_info.export:
-            data = self.bind_result(cursor, code_info.bind_tab, dbtype, elapse)
+            data = self.fetch_result(cursor, code_info.bind_tab, dbtype, elapse)
 
         # export variables
         self.run_stmt_export(code_info, paras, data)
@@ -554,7 +628,7 @@ class Program(object):
                 if k != 'data' and not k.startswith('sys_'):
                     result[k] = v
 
-        return stmt, paras, cursor, code_info
+        return stmt, paras, cursor, code_info, dbtype
 
     def run_stmt_case(self, code_info, paras):
         """
@@ -629,11 +703,11 @@ class Program(object):
 
     def report_stats(self, stats):
         try:
-            # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
             if not self.rpc_client:
-                self.rpc_client = get_client(force_new=True)
-            if random.random() > 0.1:
-                self.rpc_client.ping()
+                self.rpc_client = get_client()
+            # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
+            # if random.random() > 0.1:
+            #     self.rpc_client.ping()
             self.rpc_client.report(stats)
         except:
             import traceback

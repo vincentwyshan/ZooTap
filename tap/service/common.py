@@ -1,6 +1,4 @@
-#coding=utf8
-
-__author__ = 'Vincent@Home'
+# coding=utf8
 
 import time
 import datetime
@@ -13,10 +11,36 @@ except ImportError:
     from ordereddict import OrderedDict
 
 import simplejson as json
+import sqlalchemy.pool as sapool
+
+
+RSDB_POOL = {}
+
+
+class DBType:
+    MYSQL = "MYSQL"
+    ORACHE = "ORACLE"
+    PGSQL = "PGSQL"
+    MSSQL = "MSSQL"
 
 
 def conn_get(dbtype, connstring, options=None):
-    conn = None
+    if dbtype in ('MYSQL', 'ORACLE', 'PGSQL', 'MSSQL'):
+        conn = conn_get_rsdb(dbtype, connstring, options)
+    elif dbtype == 'MONGODB':
+        conns = connstring.split(';')
+        conns = [v.split('=') for v in conns]
+        conns = dict([(str(k), v) for k, v in conns])
+        import pymongo
+        conn = pymongo.MongoClient(**conns)
+
+    return conn
+
+
+def conn_get_rsdb(dbtype, connstring, options=None):
+    key = (dbtype, connstring)
+    if key in RSDB_POOL:
+        return RSDB_POOL[key].connect()
 
     # parse options
     options = options.strip()
@@ -34,28 +58,33 @@ def conn_get(dbtype, connstring, options=None):
             conns['port'] = int(conns['port'])
         import MySQLdb
         conns.update(options)
-        conn = MySQLdb.connect(**conns)
+
+        def connector():
+            return MySQLdb.connect(**conns)
     elif dbtype == 'ORACLE':
         import cx_Oracle
-        conn = cx_Oracle.connect(connstring, **options)
+
+        def connector():
+            return cx_Oracle.connect(connstring, **options)
     elif dbtype == 'PGSQL':
         import psycopg2
-        conn = psycopg2.connect(connstring, **options)
+
+        def connector():
+            return psycopg2.connect(connstring, **options)
     elif dbtype == 'MSSQL':
         import pyodbc
-        conn = pyodbc.connect(connstring, **options)
-    elif dbtype == 'MONGODB':
-        conns = connstring.split(';')
-        conns = [v.split('=') for v in conns]
-        conns = dict([(str(k), v) for k, v in conns])
-        import pymongo
-        conn = pymongo.MongoClient(**conns)
-    return conn
+
+        def connector():
+            return pyodbc.connect(connstring, **options)
+
+    RSDB_POOL[key] = sapool.QueuePool(connector, pool_size=10, max_overflow=10)
+    return RSDB_POOL[key].connect()
 
 
 def dbconn_ratio_parse(dbconn_ratio):
-    """dbconn_ratio example:
-    PRIMARYDB=PRIMARYDB:20,SECONDARYDB1:40,SECONDARYDB2:40;
+    """
+    :param dbconn_ratio: example,
+            PRIMARYDB=PRIMARYDB:20,SECONDARYDB1:40,SECONDARYDB2:40;
     :rtype: {PRIMARYDB.name: {db.name: ratio}}
     """
     if not dbconn_ratio:
@@ -69,6 +98,7 @@ def dbconn_ratio_parse(dbconn_ratio):
             config[k] = int(v)
         result[name] = config
     return result
+
 
 @contextmanager
 def measure():
