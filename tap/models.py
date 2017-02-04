@@ -47,7 +47,7 @@ class TapUserPermission(Base):
     __tablename__ = 'tap_userpermission'
     id = Column(Integer, Sequence('seq_tapuserpermission_id'), primary_key=True)
     user_id = Column(Integer)
-    permission_id = Column(Integer, ForeignKey('tap_permission.id'))
+    permission_id = Column(Integer, ForeignKey('tap_permission.id'), nullable=False)
     a_view = Column(Boolean, default=False)
     a_add = Column(Boolean, default=False)
     a_edit = Column(Boolean, default=False)
