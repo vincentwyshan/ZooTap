@@ -260,6 +260,7 @@ class Action(object):
                     project.description = self.request.params.get('description')  or ''
                     permission = add_permission(
                         project.name, u'项目:' + project.name)
+                    DBSession.flush()
                     add_user_permission(self.request.user, permission,
                                         True, True, True, True)
                 if 'name' in self.request.params:
