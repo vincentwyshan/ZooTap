@@ -57,6 +57,7 @@ STATS_EXC = {}
 
 # COUNTER = 0
 
+
 class Handler(object):
     def ping(self):
         print 'ping'
@@ -226,9 +227,9 @@ def flush_log(occurrence_time):
                 stats.occurrence_last = exc['occurrence_last']
 
 
-def interval_vals(ivalue):
+def get_1day_intervals(ivalue):
     """
-
+    Get all interval time point for 1 day
     :param ivalue:
     :return:
     """
@@ -264,13 +265,14 @@ def interval_flush(ivalue):
             _interval_flush(ivalue)
         except:
             print '\n\n', '*' * 100
-            print datetime.datetime.now()
+            print '[', datetime.datetime.now(), ']'
             import traceback
             traceback.print_exc()
+            time.sleep(10)
 
 
 def _interval_flush(ivalue):
-    oneday = interval_vals(ivalue)
+    oneday = get_1day_intervals(ivalue)
 
     _oneday = copy.deepcopy(oneday)
     time_awake = None
@@ -454,9 +456,8 @@ def get_client(host='127.0.0.1'):
 def main():
     usage = "usage: %prog production.ini [options]"
     parser = OptionParser(usage=usage)
-    parser.add_option('-i', type="string", dest="interval",
-                      default="1M",
-                      help="stats interval: [1M/5M/10M/30M/1H]")
+    parser.add_option('-i', type="string", dest="interval", default="1M",
+                      help="stats interval: [1M/5M/10M/30M/1H], default is 1M")
     (options, args) = parser.parse_args()
 
     # init_session_from_cmd()
