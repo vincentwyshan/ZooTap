@@ -509,50 +509,44 @@ class Program(object):
         :return:
         """
         elapse = []  # num, elapse
-        db_result = None
+        final_result = None
 
         result = OrderedDict()
         with measure() as time_total:
-            cursor = self.conn.default_cursor
-
-            # prepare
-            source = self.config.source.source
-            charset, source = self.source_charset(source)
-            if len(self.config.dbconn) == 0:
-                raise Exception("请先设置数据库")
-            writable = self.config.writable
-
-            # if dbtype == 'MSSQL':
-            #     stmts = [source.strip()]
-            # else:
-            #     stmts = stmt_split(source)
-            # source = self._source_prepare_repl(source, paras)
-            stmts = stmt_split(source)
-
-            _last_cursor = None
-            for i in range(len(stmts)):
-                stmt = stmts[i]
-                with measure() as time_used:
-                    ex_result = self.run_stmt(
-                        stmt, paras, writable, charset, result, elapse)
-                    _last_cursor, code_info = ex_result[2], ex_result[3]
-                    _last_dbtype = ex_result[4]
-                elapse.append(['ST.%s' % i, time_used()])
-
-            if (_last_cursor and
-                    not (code_info.bind_obj or code_info.bind_tab)):
-                # using the last cursor to get final data
-                db_result = self.fetch_result(
-                    _last_cursor, 'data', _last_dbtype, elapse
-                )
+            final_result = self.run_stmts_step(
+                elapse, final_result, paras, result)
         elapse.append(['EXECUTION TOTAL', time_total()])
 
-        if db_result:
-            result['data'] = db_result
+        if final_result:
+            result['data'] = final_result
         result['sys_elapse'] = elapse
         result['sys_timestamp_exec'] = time.time()
 
         return result
+
+    def run_stmts_step(self, elapse, final_result, paras, result):
+        # Prepare database connection
+        source = self.config.source.source
+        charset, source = self.source_charset(source)
+        if len(self.config.dbconn) == 0:
+            raise Exception("Please set a database")
+        writable = self.config.writable
+        stmts = stmt_split(source)
+        _last_cursor = None
+        for i in range(len(stmts)):
+            stmt = stmts[i]
+            with measure() as time_used:
+                ex_result = self.run_stmt(
+                    stmt, paras, writable, charset, result, elapse)
+                _last_cursor, code_info, _last_dbtype = ex_result
+            elapse.append(['ST.%s' % i, time_used()])
+        if (_last_cursor and not
+           (code_info.bind_obj or code_info.bind_tab or code_info.bind_var)):
+            # using the last cursor to get final data
+            final_result = self.fetch_result(
+                _last_cursor, 'data', _last_dbtype, elapse
+            )
+        return final_result
 
     def fetch_result(self, cursor, name, dbtype, elapse):
         with measure() as time_cu:
@@ -569,24 +563,36 @@ class Program(object):
         return result
 
     def run_stmt(self, stmt, paras, writable, charset, result, elapse):
+        """
+
+        :param stmt: Source code statement
+        :param paras:  Parameters
+        :param writable:
+        :param charset:
+        :param result:
+        :param elapse:
+        :return: cursor, code_info, dbtype
+        """
         stmt = stmt.strip(u';')
 
         code_info = CFNInterpreter.parse_one(stmt)
 
+        # fn_bind_var: fn_bind_var can't mix with other functions and can't
+        #              have sql scripts followed
+        if code_info.bind_var:
+            self.run_stmt_bind_var(code_info, paras, result)
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+
+        # fn_case
         if self.run_stmt_case(code_info, paras) is not True:
-            return stmt, paras, None
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype
 
         # writable check
         if not writable and self._has_write(stmt):
             raise TapNotAllowWrite
 
-        # Choose database
-        if code_info.db_name:
-            cursor = self.conn.cursor(code_info.db_name)
-            dbtype = self.conn.connection_type(code_info.db_name)
-        else:
-            cursor = self.conn.default_cursor
-            dbtype = self.conn.default_dbtype
+        # fn_dbswitch: Choose database
+        cursor, dbtype = self.run_stmt_dbswitch(code_info)
 
         # Handle the % characters
         if dbtype in ('MYSQL', 'PGSQL'):
@@ -594,41 +600,95 @@ class Program(object):
         else:
             stmt = code_info.script
 
+        # Prepare sql
         stmt = self._source_prepare_repl(stmt, paras)
         stmt, para = self._source_prepare(stmt, paras, dbtype)
 
         if charset:
             stmt = stmt.encode(charset)
 
+        # Execute sql
         if para:
             cursor.execute(stmt, para)
         else:
             cursor.execute(stmt)
 
+        # Fetch data
         data = None
         if code_info.bind_obj or code_info.bind_tab or code_info.export:
             data = self.fetch_result(cursor, code_info.bind_tab, dbtype, elapse)
 
-        # export variables
+        # fn_export: export variables
         self.run_stmt_export(code_info, paras, data)
 
-        # bind result
+        # fn_bind_tab:
         if code_info.bind_tab:
             assert code_info.bind_tab != 'data', "Don't bind result to `data`"
             result[code_info.bind_tab] = data
+        # fn_bind_obj:
         elif code_info.bind_obj:
-            if len(data) >= 2:
-                data = dict(zip(data[0], data[1]))
-            else:
-                fill_none = [None] * len(code_info.bind_obj)
-                data = dict(zip(code_info.bind_obj, fill_none))
-            for k, v in data.items():
-                if k not in code_info.bind_obj:
-                    continue
-                if k != 'data' and not k.startswith('sys_'):
-                    result[k] = v
+            self.run_stmt_bind_obj(code_info, data, result)
 
-        return stmt, paras, cursor, code_info, dbtype
+        return cursor, code_info, dbtype
+
+    def run_stmt_bind_obj(self, code_info, data, result):
+        if len(data) >= 2:
+            data = dict(zip(data[0], data[1]))
+        else:
+            fill_none = [None] * len(code_info.bind_obj)
+            data = dict(zip(code_info.bind_obj, fill_none))
+        for k, v in data.items():
+            if k not in code_info.bind_obj:
+                continue
+            if k != 'data' and not k.startswith('sys_'):
+                result[k] = v
+
+    def run_stmt_dbswitch(self, code_info):
+        if code_info.db_name:
+            cursor = self.conn.cursor(code_info.db_name)
+            dbtype = self.conn.connection_type(code_info.db_name)
+        else:
+            cursor = self.conn.default_cursor
+            dbtype = self.conn.default_dbtype
+
+        return cursor, dbtype
+
+    def run_stmt_bind_var(self, code_info, paras, result):
+        """
+        fn_bind_var: fn_bind_var('var', 'test value')
+                     fn_bind_var('var', @para_name)
+        :param code_info:
+        :param paras:
+        :return:
+        """
+        bind_var = code_info.bind_var
+
+        # Search symbol @ and replace it
+        start_search = False
+        first_quote = None
+        second_quote = None
+        for i in range(len(bind_var)):
+            char = bind_var[i]
+            if not first_quote:
+                if char in ('"', "'"):
+                    first_quote = char
+                continue
+            if not start_search:
+                if char == first_quote: 
+                    start_search = True
+                continue
+            # No symbol @
+            if not second_quote and char in ('"', "'"):
+                break
+            # Has symbol @
+            if char == '@':
+                bind_var = list(bind_var)
+                bind_var[i] = ""
+                bind_var = "".join(bind_var)
+                break
+
+        vals = eval(bind_var, paras)
+        result[vals[0]] = vals[1]
 
     def run_stmt_case(self, code_info, paras):
         """
@@ -660,22 +720,30 @@ class Program(object):
             return
 
         if not data or len(data) < 2:
-            script = code_info.script
-            script = (script.encode('utf8') if isinstance(script, unicode)
-                      else script)
-            raise Exception("fn_export failed: %s" % script)
+            # script = code_info.script
+            # script = (script.encode('utf8') if isinstance(script, unicode)
+            #           else script)
+            # raise Exception("fn_export failed: %s" % script)
+            for name in code_info.export:
+                paras[name] = None
+
         cols = data[0]
         row = data[1]
         if not row:
-            script = code_info.script
-            script = (script.encode('utf8') if isinstance(script, unicode)
-                      else script)
-            raise Exception("fn_export failed: %s" % script)
+            # script = code_info.script
+            # script = (script.encode('utf8') if isinstance(script, unicode)
+            #           else script)
+            # raise Exception("fn_export failed: %s" % script)
+            for name in code_info.export:
+                paras[name] = None
+
         row = dict(zip(cols, row))
         for name in code_info.export:
             if name not in row:
-                raise Exception("fn_export failed: not found field %s" % name)
-            paras[name] = row[name]
+                # raise Exception("fn_export failed: not found field %s" % name)
+                paras[name] = None
+            else:
+                paras[name] = row[name]
 
     def report_stats_exc(self, stats, exc_message, exc_trace):
         exc_type, exc_value, tb = sys.exc_info()

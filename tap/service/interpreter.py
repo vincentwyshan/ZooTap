@@ -52,6 +52,7 @@ class StatementInfo:
     script = None   # source code
     bind_tab = None
     bind_obj = None
+    bind_var = None
     export = []
     db_name = None
     case_statement = None
@@ -77,24 +78,21 @@ class CFNInterpreter(object):
     def function_parse(cls, source):
         """
         检查是否有函数调用，如果有，解析出函数代码
+        Parsing fn_xxx in source
         :return: (functions, sql)
         """
-        # every function call has ':'
-        if u':' not in source:
-            return [], source
-
         # function call starts with fn_
         if not re.match(ur'fn_', source, re.IGNORECASE):
             return [], source
 
-        source = list(source)
+        l_source = list(source)
         functions = []
         tmp = []
         string_start = None  # 标记字符串域开始
         # func_start = False  # 标记当前是否开始函数字符串, 不支持嵌套
         bracket_range = []  # 标记括号域
-        while source:
-            char = source.pop(0)
+        while l_source:
+            char = l_source.pop(0)
             if char in (u'"', u"'") and string_start is None:
                 # 开始字符串域
                 string_start = char
@@ -124,15 +122,19 @@ class CFNInterpreter(object):
                 functions.append(function)
                 tmp = []
 
-        # 确保 tmp 中无剩余数据
+        # Make sure no data in tmp
         tmp = (u''.join(tmp)).strip()
         if tmp:
-            raise CFNSyntaxError(tmp.encode('utf8'))
+            raise CFNSyntaxError(source.encode('utf8'))
 
-        source = u''.join(source)
-        if not source or not functions:
-            raise CFNSyntaxError
-        return functions, u''.join(source)
+        l_source = u''.join(l_source)
+        if functions and functions[0].startswith('fn_bind_var'):
+            if l_source:
+                raise CFNSyntaxError(source.encode('utf8'))
+        elif not l_source or not functions:
+            raise CFNSyntaxError(source.encode('utf8'))
+
+        return functions, u''.join(l_source)
 
     @classmethod
     def set_info(cls, functions, info):
@@ -145,6 +147,12 @@ class CFNInterpreter(object):
                 bind = func[12: -1]
                 bind = [eval(v).strip() for v in bind.split(',')]
                 info.bind_obj = bind
+            elif func_lower.startswith(u"fn_bind_var"):
+                bind = func[11:]
+                # A string: "('name', 'var_value')" or "('name', @var_name)"
+                info.bind_var = bind
+                if info.script:
+                    raise CFNSyntaxError
             elif func_lower.startswith(u'fn_export'):
                 export = func[10: -1]
                 export = export.split(',')
