@@ -347,62 +347,82 @@ def client_ensure(func):
 PORT = 10101
 
 
-class Client(object):
-    def __init__(self, host, initialize=True):
+class ClientPool(object):
+    def __init__(self, host, pool_size=30):
+        self.pool_size = pool_size
+        self.lock = threading.RLock()
         self.host = host
 
-        self.client = None
-        self.transport = None
-        self.id = None
+        self.pool = []
 
-        if initialize:
-            self.new_client()
+    def connect(self):
+        return Client(self)
 
-            self.id = (time.time(), random.random())
-            self.id = hash(self.id)
+    def _create_client(self):
+        transport = TSocket.TSocket(self.host, PORT)
+        # Time out 2 seconds
+        transport.setTimeout(1000*2)
+        transport = TTransport.TBufferedTransport(transport)
+
+        # Wrap in a protocol
+        protocol = TBinaryProtocol.TBinaryProtocol(transport)
+
+        # Create a client to use the protocol encoder
+        client = TapService.Client(protocol)
+
+        transport.open()
+
+        return client
+
+    def check_in(self, client):
+        print "check in:", id(client), len(self.pool)
+        self.lock.acquire()
+        try:
+            while len(self.pool) >= self.pool_size:
+                self.pool.pop(0)
+            self.pool.append(client)
+        finally:
+            self.lock.release()
+
+    def check_out(self):
+        self.lock.acquire()
+        try:
+            client = None
+            if len(self.pool) > 0:
+                client = self.pool.pop(0)
+            if not client:
+                client = self._create_client()
+            # print time.time(), "check out:", id(client)
+            return client
+        finally:
+            self.lock.release()
+
+
+class Client(object):
+    def __init__(self, pool):
+        self.client = pool.check_out()
+        self.pool = pool
 
     @client_ensure
     def ping(self):
         self.client.ping()
 
     def new_client(self):
-        transport = TSocket.TSocket(self.host, PORT)
-        # transport.setTimeout(1000*60*2)
-        # 超时最多两秒
-        transport.setTimeout(1000*2)
-        self.transport = TTransport.TBufferedTransport(transport)
-
-        # Wrap in a protocol
-        protocol = TBinaryProtocol.TBinaryProtocol(transport)
-
-        # Create a client to use the protocol encoder
-        self.client = TapService.Client(protocol)
-
-        self.transport.open()
+        self.client = self.pool._create_client()
 
     @client_ensure
     def report(self, params):
         self.client.report(params)
 
-    def back_pool(self):
-        LOCK.acquire()
-        try:
-            client = Client(self.host, initialize=False)
-            client.client = self.client
-            client.transport = self.transport
-            client.id = self.id
-            if (self.host in CLIENTS_INUSE and
-                    self.id in CLIENTS_INUSE[self.host]):
-                expire = CLIENTS_INUSE[self.host].pop(self.id)[1]
-                CLIENTS[self.host][self.id] = [client, expire]
-                # print "available:", len(CLIENTS[self.host]), "inuse:", len(CLIENTS_INUSE[self.host])
-        finally:
-            LOCK.release()
-
     def close(self):
         # self.transport.close()
         # Must call close to recycle transport
-        self.back_pool()
+        self.pool.check_in(self.client)
+        self.pool = None
+
+    def __del__(self):
+        if self.pool:
+            self.pool.check_in(self.client)
 
 
 def run_server():
@@ -422,37 +442,13 @@ def run_server():
     print 'Starting done.'
 
 
-MAX_SIZE = 30
-LOCK = threading.RLock()
-CLIENTS = {}  # host: {id: (client, expire)...}
-CLIENTS_INUSE = {}  # host: {id: (client, expire)...}
+POOLS = {}
 
 
-def get_client(host='127.0.0.1', force_new=False):
-    LOCK.acquire()
-    try:
-        now = time.time()
-        if host not in CLIENTS:
-            CLIENTS[host] = OrderedDict()
-
-        if len(CLIENTS[host]) == 0:
-            client = Client(host)
-            available_client = [client, now + 60 * 10]
-        else:
-            available_client = CLIENTS[host].popitem()[1]
-
-        if available_client[1] > now or force_new:
-            available_client[0].new_client()
-            available_client[1] = now + 60*10
-
-        if host not in CLIENTS_INUSE:
-            CLIENTS_INUSE[host] = {}
-
-        client, expire = available_client
-        CLIENTS_INUSE[host][client.id] = (client, expire)
-        return client
-    finally:
-        LOCK.release()
+def get_client(host='127.0.0.1'):
+    if host not in POOLS:
+        POOLS[host] = ClientPool(host)
+    return POOLS[host].connect()
 
 
 def main():

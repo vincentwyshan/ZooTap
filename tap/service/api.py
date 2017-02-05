@@ -318,16 +318,6 @@ class Program(object):
 
         self.rpc_client = None
 
-    def __del__(self):
-        try:
-            self.rpc_client.close()
-        except:
-            pass
-        try:
-            self.conn.close()
-        except:
-            pass
-
     def _has_write(self, statement):
         statement = statement.strip().lower()
         if (statement.startswith('update') or statement.startswith('insert')
