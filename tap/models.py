@@ -244,7 +244,7 @@ class TapApiClient(Base):
     name = Column(Unicode(30), nullable=False)
     description = Column(UnicodeText, default=u'')
     token = Column(Unicode(38), nullable=False)
-    auth_type = Column(Enum('TOKEN', 'CUSTOM', name="auth_type",
+    auth_type = Column(Enum('TOKEN', 'CUSTOM', name="auth_type1",
                             convert_unicode=True), default='TOKEN')
     uid_create = Column(Integer, ForeignKey('tap_user.id'))
     user_create = relationship('TapUser', backref='clients')
@@ -299,7 +299,7 @@ class TapApiAuth(Base):
     client_id = Column(Integer, ForeignKey('tap_apiclient.id'), nullable=False)
     auth_client = relationship('TapApiClient', backref='auth_list')
     token = Column(Unicode(38), nullable=False)
-    uid_auth = Column(Integer, ForeignKey('tap_user.id'))
+    uid_auth = Column(Integer, ForeignKey('tap_user.id'), nullable=False)
     user_auth = relationship('TapUser', backref='auth_apis')
     disable = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.datetime.now, nullable=False)
