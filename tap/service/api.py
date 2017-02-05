@@ -318,16 +318,6 @@ class Program(object):
 
         self.rpc_client = None
 
-    def __del__(self):
-        try:
-            self.rpc_client.close()
-        except:
-            pass
-        try:
-            self.conn.close()
-        except:
-            pass
-
     def _has_write(self, statement):
         statement = statement.strip().lower()
         if (statement.startswith('update') or statement.startswith('insert')
@@ -435,6 +425,7 @@ class Program(object):
                 if e.__class__ == ApiAuthFail:
                     result['sys_status'] = 403
             try:
+                # TODO does it really need
                 self.conn.default_cursor.execute("commit")
             except:
                 pass

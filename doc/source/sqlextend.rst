@@ -57,8 +57,8 @@ fn_export
 ------------
 导出变量
 
-fn_bind_tab & fn_bind_obj
---------------------------
+fn_bind_tab & fn_bind_obj & fn_bind_var
+----------------------------------------
 绑定结果集
 
 fn_case
@@ -80,6 +80,10 @@ fn_dbswitch
         fn_export(@c): -- 导出变量 @c
             select 'b' as c;
 
+        -- fn_bind_var
+        fn_bind_var('Name', 'Value'); -- bind variable Name: 'Value' to result
+        fn_bind_var('Name1', @c);     -- bind variable Name: 'b'  to result
+
         fn_case(@c=='a')      -- 判断 @c 值是否等于 'a'
         fn_bind_tab('tablea'):      -- 若执行下面SQL，将结果集绑定到 tablea
             select 'a', 'a1';
@@ -87,13 +91,13 @@ fn_dbswitch
             select 1 as Attr, 2 as Attr1;
             
         fn_case(@c=='b')      -- 判断 @c 值是否等于 'b'
-        fn_bind(tableb):      -- 若执行下面SQL，将结果集绑定到 tableb
+        fn_bind_tab('tableb'):      -- 若执行下面SQL，将结果集绑定到 tableb
             select 'b', 'b1';
             
-        fn_bind(test):          -- 绑定以下结果集到 test
+        fn_bind_tab('test'):          -- 绑定以下结果集到 test
             select 'c' c, 'd' d;
-            
-        -- 股票数据
-        fn_dbswitch(CADA140) -- 使用数据库 CADA140, CADA140应当在API配置的数据库选项中
-        fn_bind(table):      -- 绑定结果集到 table
+
+        -- fn_dbswitch
+        fn_dbswitch(db_1) --  use database db_1
+        fn_bind_tab('table'):      -- bind dataset to table
             select * from sthk_security limit 100;
