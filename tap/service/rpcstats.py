@@ -138,50 +138,17 @@ class Handler(object):
 
 
 def flush_log(occurrence_time):
+    r_stats, r_exc = 0, 0
     global STATS_ELAPSE, STATS_EXC
-    # 更新访问量和耗时统计
-    # print 'client:', len(STATS_ELAPSE_CLIENT)
-
     # print 'NO client:', len(STATS_ELAPSE)
     all_stats = ([(key[0], key[1], elapse) for key, elapse in
-                      STATS_ELAPSE.items()])
+                  STATS_ELAPSE.items()])
     STATS_ELAPSE = {}
     # print occurrence_time, 'ELAPSE:', len(STATS_ELAPSE)
     # print occurrence_time, 'Stats elapse:', len(all_stats)
     for api_id, client_id, elapse in all_stats:
-        with transaction.manager:
-            api = DBSession.query(TapApi).get(api_id)
-            if not api:
-                warnings.warn("API:%s is not exist." % api_id)
-                continue
-
-            q = DBSession.query(TapApiStats)\
-                .filter_by(api_id=api_id, occurrence_time=occurrence_time,
-                           client_id=client_id)
-            stats = q.first()
-            if not stats:
-                stats = TapApiStats(api_id=api_id, project_id=api.project_id,
-                                    occurrence_time=occurrence_time,
-                                    client_id=client_id)
-                DBSession.add(stats)
-                DBSession.flush()
-
-            # row-lock update
-            print '\tName:', api.name, ', ClientId:', client_id, \
-                ', Occurrence:', elapse['occurrence_total']
-            stats = DBSession.query(TapApiStats).with_lockmode('update')\
-                .filter(TapApiStats.id==stats.id).first()
-
-            stats.occurrence_time = occurrence_time
-            stats.occurrence_total += elapse['occurrence_total']
-            stats.exception_total += elapse['exception_total']
-            if stats.elapse_max < elapse['elapse_max']:
-                stats.elapse_max = elapse['elapse_max']
-            if stats.elapse_min < elapse['elapse_min']:
-                stats.elapse_min = elapse['elapse_min']
-            stats.elapse_sum += elapse['elapse_sum']
-            # print stats.occurrence_total, elapse
-            stats.elapse_avg = stats.elapse_sum / stats.occurrence_total
+        flush_log_stats(occurrence_time, api_id, client_id, elapse)
+        r_stats += 1
 
     # 更新 错误统计
     all_exc = [(key[0], key[1], key[2], exc) for key, exc in
@@ -189,42 +156,85 @@ def flush_log(occurrence_time):
     STATS_EXC = {}
     # print 'Stats exceptions:', len(all_exc)
     for api_id, client_id, exc_trace, exc in all_exc:
-        hash_id = str(hash(exc_trace))
-        with transaction.manager:
-            api = DBSession.query(TapApi).get(api_id)
-            if not api:
-                warnings.warn("API:%s is not exist." % api_id)
-                continue
+        flush_log_exc(occurrence_time, api_id, client_id, exc_trace, exc)
+        r_exc += 1
 
-            q = DBSession.query(TapApiErrors)\
-                .filter_by(api_id=api_id, client_id=client_id, hash_id=hash_id)
-            stats = q.first()
-            if not stats:
-                stats = TapApiErrors(api_id=api_id, client_id=client_id,
-                                     project_id=api.project_id, hash_id=hash_id,
-                                     occurrence_total=0,
-                                     occurrence_time=occurrence_time,
-                                     occurrence_first=exc['occurrence_first'])
-                DBSession.add(stats)
-                DBSession.flush()
+    return r_stats, r_exc
 
-            print '\tName:', api.name, ', ClientId:', client_id, ', Error:', \
-                exc['exc_type']
-            stats = DBSession.query(TapApiErrors).with_lockmode('update')\
-                .filter(TapApiErrors.id==stats.id).first()
 
-            stats.occurrence_time = occurrence_time
-            # stats.occurrence_time = exc['occurrence_time']
-            stats.occurrence_total += exc['occurrence_total']
-            stats.exc_type = exc['exc_type']
-            stats.exc_message = exc['exc_message']
-            stats.exc_trace = exc_trace
-            stats.exc_context = exc['exc_context']
-            if exc['occurrence_first'] < stats.occurrence_first:
-                stats.occurrence_first = exc['occurrence_first']
-            if (not stats.occurrence_last
-                or exc['occurrence_last'] > stats.occurrence_last):
-                stats.occurrence_last = exc['occurrence_last']
+def flush_log_exc(occurrence_time, api_id, client_id, exc_trace, exc):
+    hash_id = unicode(hash(exc_trace))
+    with transaction.manager:
+        api = DBSession.query(TapApi).get(api_id)
+        if not api:
+            warnings.warn("API:%s is not exist." % api_id)
+            return
+
+        q = DBSession.query(TapApiErrors)\
+            .filter_by(api_id=api_id, client_id=client_id, hash_id=hash_id)
+        stats = q.first()
+        if not stats:
+            stats = TapApiErrors(api_id=api_id, client_id=client_id,
+                                 project_id=api.project_id, hash_id=hash_id,
+                                 occurrence_total=0,
+                                 occurrence_time=occurrence_time,
+                                 occurrence_first=exc['occurrence_first'])
+            DBSession.add(stats)
+            DBSession.flush()
+
+        print '\tName:', api.name, ', ClientId:', client_id, ', Error:', \
+            exc['exc_type'], 'Occurrence:', exc['occurrence_total']
+        stats = DBSession.query(TapApiErrors).with_lockmode('update')\
+            .filter(TapApiErrors.id==stats.id).first()
+
+        stats.occurrence_time = occurrence_time
+        # stats.occurrence_time = exc['occurrence_time']
+        stats.occurrence_total += exc['occurrence_total']
+        stats.exc_type = exc['exc_type']
+        stats.exc_message = exc['exc_message']
+        stats.exc_trace = exc_trace
+        stats.exc_context = exc['exc_context']
+        if exc['occurrence_first'] < stats.occurrence_first:
+            stats.occurrence_first = exc['occurrence_first']
+        if (not stats.occurrence_last
+            or exc['occurrence_last'] > stats.occurrence_last):
+            stats.occurrence_last = exc['occurrence_last']
+
+
+def flush_log_stats(occurrence_time, api_id, client_id, elapse):
+    with transaction.manager:
+        api = DBSession.query(TapApi).get(api_id)
+        if not api:
+            warnings.warn("API:%s is not exist." % api_id)
+            return
+
+        q = DBSession.query(TapApiStats)\
+            .filter_by(api_id=api_id, occurrence_time=occurrence_time,
+                       client_id=client_id)
+        stats = q.first()
+        if not stats:
+            stats = TapApiStats(api_id=api_id, project_id=api.project_id,
+                                occurrence_time=occurrence_time,
+                                client_id=client_id)
+            DBSession.add(stats)
+            DBSession.flush()
+
+        # row-lock update
+        print '\tName:', api.name, ', ClientId:', client_id, \
+            ', Occurrence:', elapse['occurrence_total']
+        stats = DBSession.query(TapApiStats).with_lockmode('update')\
+            .filter(TapApiStats.id == stats.id).first()
+
+        stats.occurrence_time = occurrence_time
+        stats.occurrence_total += elapse['occurrence_total']
+        stats.exception_total += elapse['exception_total']
+        if stats.elapse_max < elapse['elapse_max']:
+            stats.elapse_max = elapse['elapse_max']
+        if stats.elapse_min < elapse['elapse_min']:
+            stats.elapse_min = elapse['elapse_min']
+        stats.elapse_sum += elapse['elapse_sum']
+        # print stats.occurrence_total, elapse
+        stats.elapse_avg = stats.elapse_sum / stats.occurrence_total
 
 
 def get_1day_intervals(ivalue):
@@ -259,10 +269,12 @@ def get_1day_intervals(ivalue):
     return _actpoints
 
 
-def interval_flush(ivalue):
+def interval_flush(ivalue, run_event):
     while 1:
         try:
-            _interval_flush(ivalue)
+            interval_flush_worker(ivalue, run_event)
+            if not run_event.is_set():
+                return
         except:
             print '\n\n', '*' * 100
             print '[', datetime.datetime.now(), ']'
@@ -271,56 +283,55 @@ def interval_flush(ivalue):
             time.sleep(10)
 
 
-def _interval_flush(ivalue):
-    oneday = get_1day_intervals(ivalue)
+def interval_flush_worker(ivalue, run_event):
+    intervals = get_1day_intervals(ivalue)
 
-    _oneday = copy.deepcopy(oneday)
+    _intervals = copy.deepcopy(intervals)
     time_awake = None
+    r_stats, r_exc = 0, 0
     while True:
+        if not run_event.is_set():
+            return
         try:
             if time_awake:
-                flush_log(
-                    datetime.datetime(
-                        time_awake.year, time_awake.month,
-                        time_awake.day, time_awake.hour, time_awake.minute
-                    )
-                )
+                occurrence_time = datetime.datetime(
+                    time_awake.year, time_awake.month, time_awake.day, 
+                    time_awake.hour, time_awake.minute)
+                r_stats, r_exc = flush_log(occurrence_time)
         except:
             import traceback
             traceback.print_exc()
         finally:
             time.sleep(1)
 
-        # 根据 interval value 确定 sleep 时间
-        try:
-            now = datetime.datetime.now()
-            now_datetime = (now.hour, now.minute, now.second)
-            interval = None
-            if _oneday:
-                time_point = _oneday.pop(0)
-                while _oneday:
-                    if now_datetime > time_point:
-                        time_point = _oneday.pop(0)
-                        continue
-                    time_awake = datetime.datetime(
-                        now.year, now.month, now.day,
-                        time_point[0], time_point[1], time_point[2]
-                    )
-                    interval = (time_awake - now).seconds
-                    break
-            if interval is None:
-                nextday = now + datetime.timedelta(days=1)
-                _oneday = copy.deepcopy(oneday)
-                time_point = _oneday.pop(0)
-                time_awake = datetime.datetime(nextday.year, nextday.month,
-                                               nextday.day, time_point[0],
-                                               time_point[1], time_point[2])
+        # Calculate the awake time and sleep seconds
+        now = datetime.datetime.now()
+        now_tuple = (now.hour, now.minute, now.second)
+        interval = None
+        if _intervals:
+            interval_tuple = _intervals.pop(0)
+            while _intervals:
+                if now_tuple > interval_tuple:
+                    interval_tuple = _intervals.pop(0)
+                    continue
+                time_awake = datetime.datetime(
+                    now.year, now.month, now.day,
+                    interval_tuple[0], interval_tuple[1], interval_tuple[2]
+                )
                 interval = (time_awake - now).seconds
-        except:
-            import traceback
-            traceback.print_exc()
-        print '[%s:%s]' % (ivalue, now), 'time points left:', len(_oneday),\
-              ', ' 'wake up: %s[%s]' % (time_awake, interval)
+                break
+        # No interval, go to next day
+        if interval is None:
+            nextday = now + datetime.timedelta(days=1)
+            _intervals = copy.deepcopy(intervals)
+            interval_tuple = _intervals.pop(0)
+            time_awake = datetime.datetime(
+                nextday.year, nextday.month, nextday.day, interval_tuple[0],
+                interval_tuple[1], interval_tuple[2]
+            )
+            interval = (time_awake - now).seconds
+
+        print '[%s:%s] stats: %s, exceptions: %s' % (ivalue, now, r_stats, r_exc)
         time.sleep(interval)
 
 
@@ -377,7 +388,7 @@ class ClientPool(object):
         return client
 
     def check_in(self, client):
-        print "check in:", id(client), len(self.pool)
+        # print "check in:", id(client), len(self.pool)
         self.lock.acquire()
         try:
             while len(self.pool) >= self.pool_size:
@@ -463,9 +474,18 @@ def main():
     # init_session_from_cmd()
     initdb()
 
-    backend = threading.Thread(target=interval_flush, args=(options.interval,))
+    run_event = threading.Event()
+    run_event.set()
+
+    backend = threading.Thread(target=interval_flush,
+                               args=(options.interval, run_event))
     backend.daemon = True
     backend.start()
 
-    run_server()
+    try:
+        run_server()
+    except KeyboardInterrupt:
+        print "Waiting worker threads quit..."
+        run_event.clear()
+        backend.join()
 
