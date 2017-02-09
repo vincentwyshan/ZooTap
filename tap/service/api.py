@@ -717,6 +717,7 @@ class Program(object):
             # raise Exception("fn_export failed: %s" % script)
             for name in code_info.export:
                 paras[name] = None
+                return
 
         cols = data[0]
         row = data[1]
@@ -727,6 +728,7 @@ class Program(object):
             # raise Exception("fn_export failed: %s" % script)
             for name in code_info.export:
                 paras[name] = None
+                return
 
         row = dict(zip(cols, row))
         for name in code_info.export:
