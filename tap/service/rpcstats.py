@@ -436,7 +436,7 @@ class Client(object):
 
 def run_server():
     processor = TapService.Processor(Handler())
-    transport = TSocket.TServerSocket(port=PORT)
+    transport = TSocket.TServerSocket(host="0.0.0.0", port=PORT)
     tfactory = TTransport.TBufferedTransportFactory()
     pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
