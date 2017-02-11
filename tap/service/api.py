@@ -579,7 +579,7 @@ class Program(object):
             return self.conn.default_cursor, code_info, self.conn.default_dbtype
 
         # writable check
-        if not writable and self._has_write(stmt):
+        if not writable and self._has_write(code_info.script):
             raise TapNotAllowWrite
 
         # fn_dbswitch: Choose database
