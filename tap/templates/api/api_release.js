@@ -1,4 +1,19 @@
 function saveRelease(){
+    if($.trim($("input[name=notes]").val()) == ""){
+        alert("必需输入发布说明!");
+        return false;
+    }
+    var version = "v" + $("input[name=version]").val();
+    var promptVal = "RELEASE:" + version;
+    var promptResult = prompt("请输入`" + promptVal + "`, 确认发布！");
+    if(promptResult == null){
+        return false;
+    }
+    if(promptResult != promptVal){
+        alert("输入错误！");
+        return false;
+    }
+ 
     var data = $('#form-release').serialize();
     $('#btn-save-release').attr('disabled', true);
     function callback(response){
