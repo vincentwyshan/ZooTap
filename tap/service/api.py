@@ -780,3 +780,4 @@ class Program(object):
             charset = charset[0]
             return charset, re.sub(ur'\!charset\=(\w+)', '', source)
         return None, source
+
