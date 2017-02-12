@@ -775,8 +775,8 @@ class Program(object):
             traceback.print_exc()
 
     def source_charset(self, source):
-        charset = re.findall(ur'\#\!charset\=(\w+)', source)
+        charset = re.findall(ur'^\!charset\=(\w+)', source)
         if len(charset) == 1:
             charset = charset[0]
-            return charset, re.sub(ur'\#\!charset\=(\w+)', '', source)
+            return charset, re.sub(ur'\!charset\=(\w+)', '', source)
         return None, source
