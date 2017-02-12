@@ -568,14 +568,14 @@ class Program(object):
 
         code_info = CFNInterpreter.parse_one(stmt)
 
+        # fn_case
+        if self.run_stmt_case(code_info, paras) is not True:
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+
         # fn_bind_var: fn_bind_var can't mix with other functions and can't
         #              have sql scripts followed
         if code_info.bind_var:
             self.run_stmt_bind_var(code_info, paras, result)
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
-
-        # fn_case
-        if self.run_stmt_case(code_info, paras) is not True:
             return self.conn.default_cursor, code_info, self.conn.default_dbtype
 
         # writable check
