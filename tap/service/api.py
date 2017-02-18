@@ -568,18 +568,18 @@ class Program(object):
 
         code_info = CFNInterpreter.parse_one(stmt)
 
+        # fn_case
+        if self.run_stmt_case(code_info, paras) is not True:
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+
         # fn_bind_var: fn_bind_var can't mix with other functions and can't
         #              have sql scripts followed
         if code_info.bind_var:
             self.run_stmt_bind_var(code_info, paras, result)
             return self.conn.default_cursor, code_info, self.conn.default_dbtype
 
-        # fn_case
-        if self.run_stmt_case(code_info, paras) is not True:
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
-
         # writable check
-        if not writable and self._has_write(stmt):
+        if not writable and self._has_write(code_info.script):
             raise TapNotAllowWrite
 
         # fn_dbswitch: Choose database
@@ -717,6 +717,7 @@ class Program(object):
             # raise Exception("fn_export failed: %s" % script)
             for name in code_info.export:
                 paras[name] = None
+                return
 
         cols = data[0]
         row = data[1]
@@ -727,6 +728,7 @@ class Program(object):
             # raise Exception("fn_export failed: %s" % script)
             for name in code_info.export:
                 paras[name] = None
+                return
 
         row = dict(zip(cols, row))
         for name in code_info.export:
@@ -773,8 +775,9 @@ class Program(object):
             traceback.print_exc()
 
     def source_charset(self, source):
-        charset = re.findall(ur'\#\!charset\=(\w+)', source)
+        charset = re.findall(ur'^\!charset\=(\w+)', source)
         if len(charset) == 1:
             charset = charset[0]
-            return charset, re.sub(ur'\#\!charset\=(\w+)', '', source)
+            return charset, re.sub(ur'\!charset\=(\w+)', '', source)
         return None, source
+
