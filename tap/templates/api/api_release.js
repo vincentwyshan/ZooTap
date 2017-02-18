@@ -13,7 +13,7 @@ function saveRelease(){
         alert("输入错误！");
         return false;
     }
- 
+
     var data = $('#form-release').serialize();
     $('#btn-save-release').attr('disabled', true);
     function callback(response){

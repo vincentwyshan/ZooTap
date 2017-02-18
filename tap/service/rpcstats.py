@@ -12,8 +12,6 @@ import threading
 from functools import wraps
 from optparse import OptionParser
 
-from collections import OrderedDict
-
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -427,8 +425,6 @@ class Client(object):
         self.client.report(params)
 
     def close(self):
-        # self.transport.close()
-        # Must call close to recycle transport
         self.pool.check_in(self.client)
         self.pool = None
 
@@ -439,7 +435,7 @@ class Client(object):
 
 def run_server():
     processor = TapService.Processor(Handler())
-    transport = TSocket.TServerSocket(port=PORT)
+    transport = TSocket.TServerSocket(host="0.0.0.0", port=PORT)
     tfactory = TTransport.TBufferedTransportFactory()
     pfactory = TBinaryProtocol.TBinaryProtocolFactory()
 
