@@ -38,6 +38,9 @@
 
     <!-- ace settings handler -->
     <script src="/static/js/ace-extra.min.js"></script>
+    <script>
+        ace.data = new ace.data_storage();
+    </script>
 
     <!-- HTML5shiv and Respond.js for IE8 to support HTML5 elements and media queries -->
 
@@ -57,9 +60,7 @@
 <!-- #section:basics/navbar.layout -->
 <div id="navbar" class="navbar navbar-default">
     <script type="text/javascript">
-				try{ace.settings.check('navbar' , 'fixed')}catch(e){}
-
-
+				try{ ace.settings.check('navbar' , 'fixed'); }catch(e){}
     </script>
 
     <div class="navbar-container container" id="navbar-container">
@@ -354,6 +355,7 @@
 
 <script>
 $(document).ready(function(){
+    ace.data = new ace.data_storage();
 	$('.chosen-select').chosen({allow_single_deselect:true});
 	$('[data-toggle="popover"]').popover({html:true, container:'body'});
 	$('[data-toggle="tooltip"]').tooltip({container:'body'});
