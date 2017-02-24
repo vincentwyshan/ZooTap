@@ -529,10 +529,9 @@ class Program(object):
             with measure() as time_used:
                 ex_result = self.run_stmt(
                     stmt, paras, writable, charset, result, elapse)
-                _last_cursor, code_info, _last_dbtype = ex_result
+                _last_cursor, code_info, _last_dbtype, has_run_sql = ex_result
             elapse.append(['ST.%s' % i, time_used()])
-        if (_last_cursor and not
-           (code_info.bind_obj or code_info.bind_tab or code_info.bind_var)):
+        if _last_cursor and has_run_sql:
             # using the last cursor to get final data
             final_result = self.fetch_result(
                 _last_cursor, 'data', _last_dbtype, elapse
@@ -567,16 +566,17 @@ class Program(object):
         stmt = stmt.strip(u';')
 
         code_info = CFNInterpreter.parse_one(stmt)
+        has_execute_sql = False
 
         # fn_case
         if self.run_stmt_case(code_info, paras) is not True:
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_execute_sql
 
         # fn_bind_var: fn_bind_var can't mix with other functions and can't
         #              have sql scripts followed
         if code_info.bind_var:
             self.run_stmt_bind_var(code_info, paras, result)
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_execute_sql
 
         # writable check
         if not writable and self._has_write(code_info.script):
@@ -603,6 +603,7 @@ class Program(object):
             cursor.execute(stmt, para)
         else:
             cursor.execute(stmt)
+        has_execute_sql = True
 
         # Fetch data
         data = None
@@ -620,7 +621,7 @@ class Program(object):
         elif code_info.bind_obj:
             self.run_stmt_bind_obj(code_info, data, result)
 
-        return cursor, code_info, dbtype
+        return cursor, code_info, dbtype, has_execute_sql
 
     def run_stmt_bind_obj(self, code_info, data, result):
         if len(data) >= 2:

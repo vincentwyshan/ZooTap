@@ -128,10 +128,11 @@ class CFNInterpreter(object):
             raise CFNSyntaxError(source.encode('utf8'))
 
         l_source = u''.join(l_source)
-        if functions and functions[0].startswith('fn_bind_var'):
-            if l_source:
-                raise CFNSyntaxError(source.encode('utf8'))
-        elif not l_source or not functions:
+        # if functions and functions[0].startswith('fn_bind_var'):
+        #     if l_source:
+        #         raise CFNSyntaxError(source.encode('utf8'))
+
+        if not l_source and not functions:  # Nothing found, error
             raise CFNSyntaxError(source.encode('utf8'))
 
         return functions, u''.join(l_source)
@@ -151,8 +152,8 @@ class CFNInterpreter(object):
                 bind = func[11:]
                 # A string: "('name', 'var_value')" or "('name', @var_name)"
                 info.bind_var = bind
-                if info.script:
-                    raise CFNSyntaxError
+                # if info.script:
+                #     raise CFNSyntaxError
             elif func_lower.startswith(u'fn_export'):
                 export = func[10: -1]
                 export = export.split(',')
