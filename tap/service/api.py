@@ -420,6 +420,7 @@ class Program(object):
                     sys_elapse=[],
                     data=[],
                     sys_error=cu('[%s]: %s' % (type(e).__name__, str(e))),
+                    sys_trace=trace,
                     sys_status=500
                 )
                 if e.__class__ == ApiAuthFail:
