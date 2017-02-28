@@ -14,8 +14,8 @@ import transaction
 
 from tap.common.character import _print, _print_err
 from tap.scripts.dbtools import initdb
-from tap.models import DBSession
-from tap.modelstask import (
+from tap.model.base import DBSession
+from tap.model.task import (
     TapTask,
     TapTaskStatus,
     TapTaskAssignment,

@@ -17,8 +17,8 @@ from tap.service.common import (
 )
 from tap.scripts.initializedb import (
     add_permission, add_user_permission)
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapDBConn,
     TapProject,
     TapUser,

@@ -1,10 +1,9 @@
-#coding=utf8
+# coding=utf8
 """
 数据导入导出工具
     格式: pickle
     大小: 全部大小不要超过内存大小
 """
-__author__ = 'Vincent'
 
 import sys
 import json
@@ -19,18 +18,17 @@ from dateutil import parser
 from pyramid.paster import (
     get_appsettings,
     setup_logging,
-    )
+)
 
 
 from tap.service.common import dict2api, api2dict, TapEncoder
-from tap.models import (
-    DBSession,
-    Base,
+from tap.model.base import DBSession, Base
+from tap.model.api import (
     TapDBConn,
     TapApiRelease
 )
 
-import tap.models as m
+import tap.model.api as m
 # 根据模型依赖顺序排列, 多对多关联在模型内部做
 DATAMODELS = [m.TapUser, m.TapPermission, m.TapUserPermission, m.TapDBConn,
               m.TapProject, m.TapApi, m.api_db, m.api_dbsecondary,

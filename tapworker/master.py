@@ -20,8 +20,8 @@ from tap.servicedef import TapTaskMaster
 from tap.servicedef.ttypes import TapError
 # from tap.scripts import init_session_from_cmd
 from tap.scripts.dbtools import initdb
-from tap.models import DBSession
-from tap.modelstask import (
+from tap.model.base import DBSession
+from tap.model.task import (
     TapTask,
     TapTaskStatus,
     TapTaskAssignment,

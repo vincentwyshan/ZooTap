@@ -1,5 +1,4 @@
-#coding=utf8
-__author__ = 'Vincent'
+# coding=utf8
 
 import os
 import random
@@ -12,7 +11,8 @@ from pyramid.httpexceptions import HTTPNotFound
 from pyramid.view import view_config
 from captcha.image import ImageCaptcha
 
-from tap.models import DBSession, CaptchaCode
+from tap.model.base import DBSession
+from tap.model.api import CaptchaCode
 
 
 chars = map(chr, range(65, 91) + range(97, 123))

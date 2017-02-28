@@ -34,8 +34,9 @@ from tap.service.api import Program
 from tap.service import exceptions
 from tap.service.tcaptcha import gen_captcha, validate
 from tap.management.uicontrol import universal_vars
-from tap.models import (
-    DBSession, TapUser, TapDBConn, TapProject, TapApi, TapApiClient,
+from tap.model.base import DBSession
+from tap.model.api import (
+    TapUser, TapDBConn, TapProject, TapApi, TapApiClient,
     TapApiAuth, TapApiAccessKey, TapApiRelease, TapApiStats, TapApiErrors,
     TapUserPermission, TapPermission, TapAsyncTask, TapApiClientCustomAuth,
     CaptchaCode,

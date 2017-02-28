@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config
 from pyramid.authentication import AuthTktAuthenticationPolicy
 from pyramid.authorization import ACLAuthorizationPolicy
 
-from tap.models import (
+from tap.model.base import (
     DBSession,
     Base,
 )

@@ -23,8 +23,8 @@ import transaction
 
 from tap.servicedef import TapService
 from tap.scripts.dbtools import initdb
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapApi,
     TapApiStats,
     TapApiErrors,

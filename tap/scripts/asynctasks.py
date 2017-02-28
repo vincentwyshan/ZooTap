@@ -26,9 +26,8 @@ from sqlalchemy import engine_from_config
 
 from tap.common.character import _print, _cs
 from tap.service.common import conn_get
-from tap.models import (
-    Base, DBSession, TapAsyncTask, TapDBConn
-)
+from tap.model.base import Base, DBSession
+from tap.model.api import TapAsyncTask, TapDBConn
 
 
 # setup_logging(config_uri)

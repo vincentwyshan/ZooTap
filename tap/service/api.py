@@ -47,8 +47,8 @@ from tap.service.cache import cache_fn, cache_fn1
 from tap.service.auth import valid_key
 from tap.service.exceptions import *
 from tap.service.rpcstats import get_client
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapProject,
     TapApi,
     TapApiRelease,

@@ -7,8 +7,8 @@ import re
 import transaction
 
 from tap.common.character import _, _t
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapProject,
     TapApi,
     TapDBConn,

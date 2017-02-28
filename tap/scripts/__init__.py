@@ -10,7 +10,7 @@ from pyramid.scripts.common import parse_vars
 from pyramid.paster import ( get_appsettings, setup_logging, )
 from sqlalchemy import engine_from_config
 
-from tap.models import (DBSession, Base)
+from tap.model.base import DBSession, Base
 
 
 def init_session_from_cmd():

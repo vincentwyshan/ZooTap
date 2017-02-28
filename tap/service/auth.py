@@ -13,8 +13,8 @@ from pyramid.view import view_config
 from tap.service.exceptions import *
 from tap.service.cache import get_val, set_val
 from tap.service.interpreter import ParaHandler
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapApiClient,
     TapApiAccessKey
 )

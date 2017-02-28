@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 
 import datetime
 
@@ -8,17 +8,7 @@ from sqlalchemy import (
     ForeignKey, Enum, DateTime, LargeBinary, Float, Table, Sequence
 )
 
-from sqlalchemy.ext.declarative import declarative_base
-
-from sqlalchemy.orm import (
-    scoped_session,
-    sessionmaker,
-    )
-
-from zope.sqlalchemy import ZopeTransactionExtension
-
-DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-Base = declarative_base()
+from tap.model.base import Base
 
 
 class TapUser(Base):
@@ -213,7 +203,7 @@ class TapApiRelease(Base):
     api_name = Column(Unicode(30), nullable=False)
     # dbconn_id = Column(Integer, ForeignKey('tap_dbconn.id'))
     # dbconn = relationship('TapDBConn')
-    version = Column(Integer, nullable=False) 
+    version = Column(Integer, nullable=False)
     content = Column(LargeBinary)
     notes = Column(UnicodeText, default=u"")
     uid_release = Column(Integer, ForeignKey('tap_user.id'))

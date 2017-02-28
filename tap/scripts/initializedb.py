@@ -13,11 +13,10 @@ from pyramid.paster import (
 
 from pyramid.scripts.common import parse_vars
 
-from tap import modelstask
+from tap.model import task as modeltask
 from tap.security.auth import encrypt_password
-from tap.models import (
-    DBSession,
-    Base,
+from tap.model.base import DBSession, Base
+from tap.model.api import (
     TapUser,
     TapProject,
     TapPermission,

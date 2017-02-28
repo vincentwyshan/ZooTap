@@ -15,25 +15,7 @@ from tap.service.api import Program
 from tap.service.common import (
     conn_get, api2dict, TapEncoder, dbconn_ratio_parse, dict2api
 )
-from tap.scripts.initializedb import (
-    add_permission, add_user_permission)
-from tap.models import (
-    DBSession,
-    TapDBConn,
-    TapProject,
-    TapUser,
-    TapPermission,
-    TapUserPermission,
-    TapApi,
-    TapSource,
-    TapParameter,
-    TapApiRelease,
-    TapApiClient,
-    TapApiClientCustomAuth,
-    TapApiClientCustomPara,
-    TapApiAuth,
-    TapApiErrors,
-)
+
 
 
 class TaskActions(object):

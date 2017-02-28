@@ -15,15 +15,15 @@ from pyramid.security import Allow, Deny
 import transaction
 
 from tap.service import exceptions
-from tap.models import (
-    DBSession,
+from tap.model.base import DBSession
+from tap.model.api import (
     TapUser,
     TapPermission,
     TapUserPermission,
     TapProject,
     TapApi, TapApiAuth
 )
-from tap.modelstask import (
+from tap.model.task import (
     TapTaskProject,
 )
 

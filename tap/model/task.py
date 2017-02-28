@@ -1,4 +1,4 @@
-#coding=utf8
+# coding=utf8
 
 
 import datetime
@@ -9,8 +9,8 @@ from sqlalchemy import (
     ForeignKey, Enum, DateTime, LargeBinary, Float, Table, Sequence
 )
 
-from tap.models import Base
-from tap.models import (
+from tap.model.base import Base
+from tap.model.api import (
     TapUser
 )
 

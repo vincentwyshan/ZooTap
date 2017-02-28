@@ -11,8 +11,8 @@ import transaction
 
 from tap.common.character import _, _t
 from tap.management.uicontrol import universal_vars
-from tap.models import DBSession
-from tap.modelstask import (
+from tap.model.base import DBSession
+from tap.model.task import (
     TapTaskProject, TapTask, TapTaskHost
 )
 
