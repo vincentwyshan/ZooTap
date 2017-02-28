@@ -770,9 +770,6 @@ class Program(object):
         try:
             if not self.rpc_client:
                 self.rpc_client = get_client()
-            # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
-            # if random.random() > 0.1:
-            #     self.rpc_client.ping()
             self.rpc_client.report(stats)
         except:
             import traceback
