@@ -113,7 +113,7 @@ class TapTaskProject(Base):
 
 class TapTaskAction(Base):
     """
-    A child action in a task
+    A action definition in a task
     """
     __tablename__ = 'tap_taskaction'
     id = Column(Integer, Sequence('seq_ttaction_id'), primary_key=True)
