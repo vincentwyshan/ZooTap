@@ -335,7 +335,7 @@ class Program(object):
         """
         for name, value in paras.items():
             reg_name = ur'([^\w])@@%s\b' % name
-            source = re.sub(reg_name, u' %s ' % unicode(value), source)
+            source = re.sub(reg_name, ur'\1 %s ' % unicode(value), source)
         return source
 
     def _source_prepare(self, source, paras, dbtype):
@@ -420,6 +420,7 @@ class Program(object):
                     sys_elapse=[],
                     data=[],
                     sys_error=cu('[%s]: %s' % (type(e).__name__, str(e))),
+                    sys_trace=trace,
                     sys_status=500
                 )
                 if e.__class__ == ApiAuthFail:
@@ -486,7 +487,8 @@ class Program(object):
                 result['data'] = [[val_universal(v, None) for v in row]
                                    for row in data]
             else:
-                result['data'] = []
+                pass
+                # result['data'] = []
         elapse.append(['EXECUTION TOTAL', time_total()])
 
         result['sys_timestamp_exec'] = time.time()
@@ -529,10 +531,9 @@ class Program(object):
             with measure() as time_used:
                 ex_result = self.run_stmt(
                     stmt, paras, writable, charset, result, elapse)
-                _last_cursor, code_info, _last_dbtype = ex_result
+                _last_cursor, code_info, _last_dbtype, has_data = ex_result
             elapse.append(['ST.%s' % i, time_used()])
-        if (_last_cursor and not
-           (code_info.bind_obj or code_info.bind_tab or code_info.bind_var)):
+        if _last_cursor and has_data:
             # using the last cursor to get final data
             final_result = self.fetch_result(
                 _last_cursor, 'data', _last_dbtype, elapse
@@ -567,16 +568,17 @@ class Program(object):
         stmt = stmt.strip(u';')
 
         code_info = CFNInterpreter.parse_one(stmt)
+        has_data = False
 
         # fn_case
         if self.run_stmt_case(code_info, paras) is not True:
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_data
 
         # fn_bind_var: fn_bind_var can't mix with other functions and can't
         #              have sql scripts followed
         if code_info.bind_var:
             self.run_stmt_bind_var(code_info, paras, result)
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype
+            return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_data
 
         # writable check
         if not writable and self._has_write(code_info.script):
@@ -603,11 +605,13 @@ class Program(object):
             cursor.execute(stmt, para)
         else:
             cursor.execute(stmt)
+        has_data = True
 
         # Fetch data
         data = None
         if code_info.bind_obj or code_info.bind_tab or code_info.export:
             data = self.fetch_result(cursor, code_info.bind_tab, dbtype, elapse)
+            has_data = False
 
         # fn_export: export variables
         self.run_stmt_export(code_info, paras, data)
@@ -620,7 +624,7 @@ class Program(object):
         elif code_info.bind_obj:
             self.run_stmt_bind_obj(code_info, data, result)
 
-        return cursor, code_info, dbtype
+        return cursor, code_info, dbtype, has_data
 
     def run_stmt_bind_obj(self, code_info, data, result):
         if len(data) >= 2:
@@ -697,7 +701,7 @@ class Program(object):
             case_statement = re.sub(ur'\b%s\b' % para_name, "paras['%s']" %
                                     para_name, case_statement)
         result = eval(case_statement)
-        print case_statement, result
+        # print case_statement, result
         return result
 
     def run_stmt_export(self, code_info, paras, data):
@@ -766,9 +770,6 @@ class Program(object):
         try:
             if not self.rpc_client:
                 self.rpc_client = get_client()
-            # 防止 oneway 模式 silient down, 约有 10% 的几率发起一个 ping 命令
-            # if random.random() > 0.1:
-            #     self.rpc_client.ping()
             self.rpc_client.report(stats)
         except:
             import traceback
