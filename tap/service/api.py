@@ -335,7 +335,7 @@ class Program(object):
         """
         for name, value in paras.items():
             reg_name = ur'([^\w])@@%s\b' % name
-            source = re.sub(reg_name, u' %s ' % unicode(value), source)
+            source = re.sub(reg_name, u'\1 %s ' % unicode(value), source)
         return source
 
     def _source_prepare(self, source, paras, dbtype):
