@@ -121,3 +121,4 @@ setup(
 # msgmerge --update tap/locale/zh_CN/LC_MESSAGES/tap.po tap/locale/tap.pot
 # msgmerge --update tap/locale/en/LC_MESSAGES/tap.po tap/locale/tap.pot
 # msgfmt -o locale/zh_CN/LC_MESSAGES/tap.mo locale/zh_CN/LC_MESSAGES/tap.po
+
