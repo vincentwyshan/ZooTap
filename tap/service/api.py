@@ -701,7 +701,7 @@ class Program(object):
             case_statement = re.sub(ur'\b%s\b' % para_name, "paras['%s']" %
                                     para_name, case_statement)
         result = eval(case_statement)
-        print case_statement, result
+        # print case_statement, result
         return result
 
     def run_stmt_export(self, code_info, paras, data):
