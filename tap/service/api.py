@@ -486,7 +486,8 @@ class Program(object):
                 result['data'] = [[val_universal(v, None) for v in row]
                                    for row in data]
             else:
-                result['data'] = []
+                pass
+                # result['data'] = []
         elapse.append(['EXECUTION TOTAL', time_total()])
 
         result['sys_timestamp_exec'] = time.time()
