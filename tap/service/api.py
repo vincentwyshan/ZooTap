@@ -578,7 +578,7 @@ class Program(object):
         #              have sql scripts followed
         if code_info.bind_var:
             self.run_stmt_bind_var(code_info, paras, result)
-            return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_data
+            # return self.conn.default_cursor, code_info, self.conn.default_dbtype, has_data
 
         # writable check
         if not writable and self._has_write(code_info.script):
