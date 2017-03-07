@@ -594,6 +594,9 @@ class Program(object):
             stmt = code_info.script
 
         # Prepare sql
+        if not stmt:
+            return cursor, code_info, dbtype, has_data
+
         stmt = self._source_prepare_repl(stmt, paras)
         stmt, para = self._source_prepare(stmt, paras, dbtype)
 
