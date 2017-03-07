@@ -248,7 +248,7 @@ class ConnectionManager(object):
         for _conn in self.config_conns[1:]:
             if db_name != _conn.name:
                 continue
-            _conn = self.cursor_secondary(_conn)
+            _conn = self._secondary_choose(_conn)
             conn = conn_get(
                 _conn.dbtype,
                 _conn.connstring,
