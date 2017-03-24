@@ -419,7 +419,7 @@ class Client(object):
         self.client.ping()
 
     def new_client(self):
-        self.client = self.pool._create_client()
+        self.client = self.pool.check_out()
 
     @client_ensure
     def report(self, params):
@@ -430,7 +430,7 @@ class Client(object):
         self.pool = None
 
     def __del__(self):
-        if self.pool:
+        if hasattr(self, 'pool') and self.pool:
             self.pool.check_in(self.client)
 
 
