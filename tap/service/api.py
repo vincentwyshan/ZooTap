@@ -319,7 +319,7 @@ class ModuleManager(object):
             os.makedirs(module_dir)
             open(os.path.join(module_dir, '__init__.py'), 'w').write("")
         sys.path.append(module_dir)
-        cls.module_dir
+        cls.module_dir = module_dir
 
     @classmethod
     def get_module(cls, source, paras):
@@ -333,8 +333,8 @@ class ModuleManager(object):
         if lib_name in cls.modules:
             return cls.modules[lib_name]
 
-        paras = ", ".join(paras)
-        source = re.sub(ur"^def[\s\t\b]+main[\s\t\b]*\(", u"def main(%s" % paras, source)
+        paras = str(", ".join(paras))
+        source = re.sub(r"^def[\s\t\b]+main[\s\t\b]*\(", "def main(%s" % paras, source)
         path = os.path.join(module_dir, lib_name + ".py")
         source = "# coding=utf8\n\n" + source
         open(path, 'w').write(source)
