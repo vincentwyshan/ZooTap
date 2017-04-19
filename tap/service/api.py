@@ -309,7 +309,7 @@ class ConnectionManager(object):
 class ModuleManager(object):
     modules = {}
 
-    module_dir =  null
+    module_dir = None
 
     @classmethod
     def init_dir(cls):
