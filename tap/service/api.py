@@ -15,6 +15,7 @@ import decimal
 import datetime
 import types
 import random
+import hashlib
 try:
     from collections import OrderedDict
 except ImportError:
@@ -24,6 +25,7 @@ from dateutil import parser
 from pyramid.view import view_config
 from pyramid.response import Response
 from pyramid.httpexceptions import HTTPNotFound
+from pyramid.threadlocal import get_current_registry
 import simplejson as json
 
 try:
@@ -57,6 +59,13 @@ from tap.models import (
 
 # cache container
 SOURCES_CONTAINER = {}
+
+# Module directory
+MODULE_DIR = get_current_registry().settings['module_dir']
+if not os.path.isdir(MODULE_DIR):
+    os.makedirs(MODULE_DIR)
+    open(os.path.join(MODULE_DIR, '__init__.py'), 'w').write("")
+sys.path.append(MODULE_DIR)
 
 # debug signal
 TAP_DEBUGINFO = int(os.environ.get('TAP_DEBUGINFO', '0'))
@@ -303,6 +312,30 @@ class ConnectionManager(object):
             conn.close()
 
 
+class ModuleManager(object):
+    modules = {}
+
+    @classmethod
+    def get_module(cls, source, paras):
+        md5 = hashlib.md5(source).hexdigest()
+        lib_name = "lib_%s" % md5
+
+        if lib_name in cls.modules:
+            return cls.modules[lib_name]
+
+        paras = ", ".join(paras)
+        source = re.sub(r"^def[\s\t\b]+main[\s\t\b]*\(", "def main(%s" % paras, source)
+        path = os.path.join(MODULE_DIR, lib_name + ".py")
+        f = open(path, 'w')
+        print >>f, "# coding=utf8\n\n"
+        print >>f, source
+        f.close()
+
+        mod = __import__(lib_name)
+        cls.modules[lib_name] = mod
+        return mod
+
+
 class Program(object):
     def __init__(self, config, ver_num):
         """
@@ -460,7 +493,7 @@ class Program(object):
         result = OrderedDict(
             sys_elapse=elapse
         )
-        container = {}
+        func_main = None
         with measure() as time_total:
             variables = {}
             for k, v in paras.items():
@@ -469,28 +502,29 @@ class Program(object):
                 variables[k] = v
             source = self.config.source.source.encode('utf8')
             source = source.replace('\r', '')
-            source = ('#coding=utf8\r\n%s' % source)
-            hash_source = hash(source)
+            # source = ('#coding=utf8\r\n%s' % source)
+            # hash_source = hash(source)
 
-            if hash_source in SOURCES_CONTAINER:
-                container = SOURCES_CONTAINER[hash_source]
-            else:
-                exec source in container
-                SOURCES_CONTAINER[hash_source] = container
+            # if hash_source in SOURCES_CONTAINER:
+            #     container = SOURCES_CONTAINER[hash_source]
+            # else:
+            #     exec source in container
+            #     SOURCES_CONTAINER[hash_source] = container
 
-            container.update(variables)
+            # container.update(variables)
 
-            # 赋予 数据库连接
-            container['g_cursor'] = self.conn.default_cursor
+            # assign database connections
+            variables['g_cursor'] = self.conn.default_cursor
+            variables['g_result'] = result
             for dbcfg in self.config.dbconn:
                 name = dbcfg.name
-                container['g_cursor_%s' % str(name)] = self.conn.cursor(name)
+                variables['g_cursor_%s' % str(name)] = self.conn.cursor(name)
+            func_main = ModuleManager.get_module(source, variables.keys()).main
 
-            container['g_result'] = result
         elapse.append(['COMPILE', time_total()])
 
         with measure() as time_total:
-            data = container['main']()
+            data = func_main(**variables)
             if data:
                 result['data'] = [[val_universal(v, None) for v in row]
                                    for row in data]
