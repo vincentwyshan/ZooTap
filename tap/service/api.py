@@ -60,12 +60,6 @@ from tap.models import (
 # cache container
 SOURCES_CONTAINER = {}
 
-# Module directory
-MODULE_DIR = get_current_registry().settings['module_dir']
-if not os.path.isdir(MODULE_DIR):
-    os.makedirs(MODULE_DIR)
-    open(os.path.join(MODULE_DIR, '__init__.py'), 'w').write("")
-sys.path.append(MODULE_DIR)
 
 # debug signal
 TAP_DEBUGINFO = int(os.environ.get('TAP_DEBUGINFO', '0'))
@@ -315,8 +309,24 @@ class ConnectionManager(object):
 class ModuleManager(object):
     modules = {}
 
+    module_dir =  null
+
+    @classmethod
+    def init_dir(cls):
+        # Module directory
+        module_dir = get_current_registry().settings['module_dir']
+        if not os.path.isdir(module_dir):
+            os.makedirs(module_dir)
+            open(os.path.join(module_dir, '__init__.py'), 'w').write("")
+        sys.path.append(module_dir)
+        cls.module_dir
+
     @classmethod
     def get_module(cls, source, paras):
+        if not cls.module_dir:
+            cls.init_dir()
+        module_dir = cls.module_dir
+
         md5 = hashlib.md5(source).hexdigest()
         lib_name = "lib_%s" % md5
 
@@ -325,11 +335,9 @@ class ModuleManager(object):
 
         paras = ", ".join(paras)
         source = re.sub(r"^def[\s\t\b]+main[\s\t\b]*\(", "def main(%s" % paras, source)
-        path = os.path.join(MODULE_DIR, lib_name + ".py")
-        f = open(path, 'w')
-        print >>f, "# coding=utf8\n\n"
-        print >>f, source
-        f.close()
+        path = os.path.join(module_dir, lib_name + ".py")
+        source = "# coding=utf8\n\n" + source
+        open(path, 'w').write(source)
 
         mod = __import__(lib_name)
         cls.modules[lib_name] = mod
