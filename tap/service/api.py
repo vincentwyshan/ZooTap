@@ -334,7 +334,7 @@ class ModuleManager(object):
             return cls.modules[lib_name]
 
         paras = ", ".join(paras)
-        source = re.sub(ur"^def[\s\t\b]+main[\s\t\b]*\(", "def main(%s" % paras, source)
+        source = re.sub(ur"^def[\s\t\b]+main[\s\t\b]*\(", u"def main(%s" % paras, source)
         path = os.path.join(module_dir, lib_name + ".py")
         source = "# coding=utf8\n\n" + source
         open(path, 'w').write(source)
