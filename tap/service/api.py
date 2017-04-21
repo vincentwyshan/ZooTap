@@ -323,13 +323,17 @@ class ModuleManager(object):
 
     @classmethod
     def get_module(cls, source, paras):
+        """
+        :param source: Source code string
+        :param paras: para names list
+        :return: 
+        """
         if not cls.module_dir:
             cls.init_dir()
         module_dir = cls.module_dir
 
-        keys = paras.keys()
-        keys.sort()
-        md5 = hashlib.md5( '%s%s'(source, repr(keys))).hexdigest()
+        paras.sort()
+        md5 = hashlib.md5( '%s%s'(source, repr(paras))).hexdigest()
         lib_name = "lib_%s" % md5
 
         if lib_name in cls.modules:
