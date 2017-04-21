@@ -333,7 +333,7 @@ class ModuleManager(object):
         module_dir = cls.module_dir
 
         paras.sort()
-        md5 = hashlib.md5( '%s%s'(source, repr(paras))).hexdigest()
+        md5 = hashlib.md5( '%s%s' % (source, repr(paras))).hexdigest()
         lib_name = "lib_%s" % md5
 
         if lib_name in cls.modules:
