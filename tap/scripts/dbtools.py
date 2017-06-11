@@ -3,6 +3,11 @@
 Data dump/import
     format: pickle
     size: max_size shouldn't exceed memory size
+    
+Warning:
+    dump/import for the purpose of always changing API configuration in dev environment, 
+    prod environment keep syncing with dev environment. If make any modification in prod
+    environment, the dump/import process may not work.
 """
 
 import os
@@ -32,7 +37,7 @@ from tap.models import (
 )
 
 import tap.models as m
-# 根据模型依赖顺序排列, 多对多关联在模型内部做
+# In the order of model dependency
 DATAMODELS = [m.TapUser, m.TapPermission, m.TapUserPermission, m.TapDBConn,
               m.TapProject, m.TapApi, m.api_db, m.api_dbsecondary,
               m.TapParameter, m.TapSource, m.TapApiConfig, m.TapApiRelease,
