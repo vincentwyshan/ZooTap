@@ -1,13 +1,14 @@
-#coding=utf8
+# coding=utf8
 """
-数据导入导出工具
-    格式: pickle
-    大小: 全部大小不要超过内存大小
+Data dump/import
+    format: pickle
+    size: max_size shouldn't exceed memory size
 """
-__author__ = 'Vincent'
 
+import os
 import sys
 import json
+import time
 import cPickle
 import datetime
 from optparse import OptionParser
@@ -60,13 +61,21 @@ def initdb():
 
 def tap_dump():
     usage = "usage: %prog production.ini [options]"
-    parser = OptionParser(usage=usage)
+    _parser = OptionParser(usage=usage)
     parser.add_option('-p', type="string", dest="path",
                       default="/tmp/tapdump.pkl",
                       help="dump file path, default: /tmp/tapdump.pkl")
-    (options, args) = parser.parse_args()
+    (options, args) = _parser.parse_args()
     initdb()
 
+    _dump(options.path)
+    print 'Dump done:', options.path
+
+
+def _dump(path):
+    """
+    :return: [[table_name, column_names, data_instances...]...]
+    """
     data = []
     with transaction.manager:
         for md in DATAMODELS:
@@ -82,22 +91,32 @@ def tap_dump():
                 for c in columns:
                     instance[c] = getattr(row, c)
                 table_data.append(instance)
-    f = open(options.path, 'wb')
+    f = open(path, 'wb')
     cPickle.dump(data, f)
     f.close()
-    print 'Dump done:', options.path
 
 
 def tap_import():
     usage = "usage: %prog production.ini [options]"
-    parser = OptionParser(usage=usage)
-    parser.add_option('-p', type="string", dest="path",
-                      default="/tmp/tapdump.pkl",
-                      help="import file path, default: /tmp/tapdump.pkl")
-    (options, args) = parser.parse_args()
+    _parser = OptionParser(usage=usage)
+    _parser.add_option('-p', type="string", dest="path",
+                       default="/tmp/tapdump.pkl",
+                       help="import file path, default: /tmp/tapdump.pkl")
+    (options, args) = _parser.parse_args()
     initdb()
 
     path = options.path
+
+    # Backup first
+    path_bak = os.path.join(os.path.dirname(path), "backup-%s" % time.time())
+    _dump(path_bak)
+
+    with transaction.manager:
+        _import(path)
+    print 'Import done:', options.path
+
+
+def _import(path):
     f = open(path, 'rb')
     data = cPickle.load(f)
     # TODO oracle sequence 没有同步 可能导致重复出现违反唯一索引错误
@@ -106,26 +125,30 @@ def tap_import():
         md = get_model(table_data[0])
         columns = table_data[1]
         for row in table_data[2:]:
-            # 唯一性检查
-            if 'id' in columns:
-                exists = DBSession.query(md).filter_by(id=row['id']).first()
-                if exists:
-                    continue
-            else:
-                exists = DBSession.query(md)
-                # TODO这里可能由于时间戳不一致，导致数据重复
-                for c in columns:
-                    exists = eval("exists.filter_by(%s=row[c])" % c)
-                exists = exists.first()
-                if exists:
-                    continue
-            # 开始导入
+            # Unique check
+            chk_cols = ["id"]
+            if 'id' not in columns:
+                chk_cols = columns
+
+            exists = DBSession.query(md)
+            for c in chk_cols:
+                exists = eval("exists.filter_by(%s=row[c])" % c)
+            exists = exists.first()
+            if exists and md.name == 'tap_dbconn':
+                continue
+
+            # Start import
             if hasattr(md, '__table__'):
                 md = md.__table__
 
-            insert = md.insert().values(row)
-            DBSession.bind.execute(insert)
-    print 'Import done:', options.path
+            if not exists:
+                insert = md.insert().values(row)
+                DBSession.bind.execute(insert)
+            else:
+                update = md.update().values(row)
+                for col in chk_cols:
+                    update = update.where(getattr(md.c, col)==row[col])
+                DBSession.bind.execute(update)
 
 
 def check_dbconn():
