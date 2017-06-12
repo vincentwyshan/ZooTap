@@ -67,9 +67,9 @@ def initdb():
 def tap_dump():
     usage = "usage: %prog production.ini [options]"
     _parser = OptionParser(usage=usage)
-    parser.add_option('-p', type="string", dest="path",
-                      default="/tmp/tapdump.pkl",
-                      help="dump file path, default: /tmp/tapdump.pkl")
+    _parser.add_option('-p', type="string", dest="path",
+                       default="/tmp/tapdump.pkl",
+                       help="dump file path, default: /tmp/tapdump.pkl")
     (options, args) = _parser.parse_args()
     initdb()
 
