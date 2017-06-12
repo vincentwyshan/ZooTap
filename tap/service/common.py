@@ -251,6 +251,7 @@ def cu(val, encoding=None):
         val = val.decode('gb18030', 'ignore')
     return val
 
+
 class TapEncoder(json.JSONEncoder):
     def default(self, v):
         if isinstance(v, datetime.date):
@@ -264,7 +265,6 @@ class TapEncoder(json.JSONEncoder):
         else:
             pass
         return json.JSONEncoder.default(self, v)
-
 
 
 class FIFODict(OrderedDict):
