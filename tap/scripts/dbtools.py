@@ -150,9 +150,16 @@ def _import(path):
                 insert = md.insert().values(row)
                 DBSession.bind.execute(insert)
             else:
+                _id = None
+                for k, v in row.items():
+                    if k.lower() == 'id':
+                        _id = row.pop(k)
                 update = md.update().values(row)
                 for col in chk_cols:
-                    update = update.where(getattr(md.c, col)==row[col])
+                    if col.lower() == 'id':
+                        update = update.where(getattr(md.c, col)==_id)
+                    else:
+                        update = update.where(getattr(md.c, col)==row[col])
                 DBSession.bind.execute(update)
 
 
