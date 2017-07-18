@@ -77,7 +77,7 @@ def conn_get_rsdb(dbtype, connstring, options=None):
         def connector():
             return pyodbc.connect(connstring, **options)
 
-    RSDB_POOL[key] = sapool.QueuePool(connector, pool_size=10, max_overflow=10)
+    RSDB_POOL[key] = sapool.QueuePool(connector, pool_size=10, max_overflow=10, recycle=120)
     return RSDB_POOL[key].connect()
 
 

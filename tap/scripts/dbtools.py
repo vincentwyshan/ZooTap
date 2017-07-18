@@ -150,10 +150,12 @@ def _import(path):
                 insert = md.insert().values(row)
                 DBSession.bind.execute(insert)
             else:
+                # remove Id from update values, in case getting error from SQL Server
                 _id = None
                 for k, v in row.items():
                     if k.lower() == 'id':
                         _id = row.pop(k)
+
                 update = md.update().values(row)
                 for col in chk_cols:
                     if col.lower() == 'id':
