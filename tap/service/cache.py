@@ -1,9 +1,8 @@
-#coding=utf8
-__author__ = 'Vincent.Wen'
-
+# coding=utf8
 
 import time
 import cPickle
+from hashlib import md5
 
 from dogpile.cache.api import NoValue
 from pyramid_dogpile_cache import get_region
@@ -51,7 +50,7 @@ def cache_key(config, version, *args, **kwargs):
     api_name = config.name.encode('utf8')
     paras = list(args)
     paras.extend([(k, v) for k, v in kwargs.items()])
-    paras = str(hash(repr(paras))).replace('-', '_')
+    paras = md5(repr(paras)).hexdigest()
     key = key % (dict(project_name=project_name, api_name=api_name,
                       paras=paras, version=version))
     return key
@@ -131,7 +130,7 @@ def cache_fn1(expire):
             keys = list(kargs)
             keys.extend([(k, v) for k, v in kwarg.items()])
             keys.insert(0, func.__name__)
-            key = 'fn.' + str(hash(repr(keys))).replace('-', '_')
+            key = 'fn.' + md5(repr(keys)).hexdigest()
 
             # TODO same cache request mutex
             def creator():
