@@ -7,7 +7,12 @@ function saveApi(){
     var dbconn = [];
     for(var i=0; i< $('#dbconn').next().find('ul li.search-choice').size(); i++){
         var name = $($('#dbconn').next().find('ul li.search-choice')[i]).text();
-        dbconn.push($('#dbconn option:contains('+name+')').val());
+        // dbconn.push($('#dbconn option:contains('+name+')').val());
+        $('#dbconn option:contains('+name+')').each(function(){
+            if($(this).text() == name){
+                dbconn.push($(this).val());
+            }
+        });
     }
     $('[name=dbconn]').val(dbconn.join(','));
 
