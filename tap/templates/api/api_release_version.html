@@ -369,9 +369,9 @@ $(document).ready(function(){
         highlightGutterLine: false
     })
     editor.renderer.$cursorLayer.element.style.opacity=0;
-    editor.container.style.pointerEvents="none"
+    // editor.container.style.pointerEvents="none"
     editor.container.style.opacity=0.5 // or use svg filter to make it gray
-    editor.renderer.setStyle("disabled", true)
+    // editor.renderer.setStyle("disabled", true)
     editor.blur()
 
     $('input').attr('disabled', true);
