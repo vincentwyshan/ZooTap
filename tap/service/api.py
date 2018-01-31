@@ -80,7 +80,6 @@ def main(request):
     config = dict2api(config)
 
     # run program
-    import pdb; pdb.set_trace()
     try:
         result = Program(config, version).run(dict(request.params))
     except ApiAuthFail:
